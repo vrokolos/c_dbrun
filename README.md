@@ -33,7 +33,7 @@ This is a generic command that accept one single json object with these properti
 }
 ```
 arg | type | description 
-- | - |-
+-- | -- | --
 kind | 0 | executes whole file **(default)**
 kind | 1 | executes current query 
 kind | 2 | describes current word / object
