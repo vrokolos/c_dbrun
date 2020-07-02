@@ -35,12 +35,12 @@ This is a generic command that accept one single json object with these properti
 arg | type | description 
 - | - |-
 kind | 0 | executes whole file **(default)**
- | | 1 | executes current query 
- | | 2 | describes current word / object
+kind | 1 | executes current query 
+kind | 2 | describes current word / object
 newwindow |false | pipes all output to vsCode output panel
-| | true | pipes data output to a new vsCode editor and all other output to vscode output panel
+newwindow | true | pipes data output to a new vsCode editor and all other output to vscode output panel
 format | "text" | generates text ascii data table for resultsets
-| | "csv" | generates csv table for resultsets
+format | "csv" | generates csv table for resultsets
 
 ## Query Parameters
 You can use parameters in your files like ":THEID"
