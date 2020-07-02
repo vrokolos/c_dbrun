@@ -16,11 +16,9 @@ In your settings set **dbrun.connection** with this format: "username/password@h
 
 ## Usage
 
-The current query grabs the block the cursor resides in vs code. It grabs the block between the first blank lines starting from the cursor positions.
+To find the current query it grabs the block the cursor resides in vs code. It gets the string between the first blank lines starting from the cursor positions.
 
-Do not end your commands with a semicolon ";". 
-
-It will result in an error being thrown
+Do not end your commands with a semicolon ";", it will result in an error being thrown
 
 ## dbrun.run
 
@@ -46,7 +44,8 @@ format | "csv" | generates csv table for resultsets
 You can use parameters in your files like ":THEID"
 
 At the beggining of your sql file you should add each parameter with the "--:PARAM=VALUE" style
-example
+
+Example:
 ``` sql
 --:THEID=3
 --:THEDATE=TO_DATE('01/01/1900', 'dd/mm/yyyy')
@@ -57,7 +56,7 @@ SELECT :THEDATE AS DATEVAL,
 FROM DUAL
 ```
 
-Currently these get substituted during executions and they're not bound by oracle
+Currently these get substituted during execution and they're not bound by oracle
 
 ## Transactions
 Everything is run under a single transaction and you should run "commit" to commit the changes
