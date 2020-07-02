@@ -1,8 +1,30 @@
 # dbrun (EARLY BETA)
-Run SQL commands. **Only oracle support currently**
+Run SQL commands. **Only oracle support currently**. 
+
+There is currently a hardcode **limit of 10/50 rows** per query. Will make it configurable later
 
 ## Configuration
 In your settings set **dbrun.connection** with this format: "username/password@host:port/servicename"
+
+## Example Output
+
+```
+Rows: [10/35]        Time: 161 ms
+┌───────────────────────────────┐
+│ ID   ENABLED  CODE  THE_ORDER │
+├───────────────────────────────┤
+│ 138  1              15        │
+│ 129  1        999             │
+│ 130  1        999             │
+│ 1    1        259   10        │
+│ 2    1        260   11        │
+│ 3    1        261   13        │
+│ 61   1        999             │
+│ 62   1        999             │
+│ 63   1        999             │
+│ 64   1        999             │
+└───────────────────────────────┘
+```
 
 ## Default Shortcuts
  For use only in .sql files
