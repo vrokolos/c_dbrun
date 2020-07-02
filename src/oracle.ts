@@ -1,6 +1,6 @@
 import oracledb from "oracledb";
-export class Oracle {
-    con: string = "";
+import { ExecIn, ExecOut, Executor } from "./iDB";
+export class Oracle implements Executor {
     conn?: oracledb.Connection;
 
     dbmsQry = `
@@ -22,88 +22,63 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
 `;
     }
 
-    public async exec(con: string, qr: string, limit: number, queryTpe: string, eol: string): Promise<ExecOut> {
-        this.con = con;
-        let out: string[] = [];
-        let cnt: string = "";
-        let errorOffset = null;
-        let theddl: { [filename: string]: string[] } = {};
+    public async exec(opts: ExecIn): Promise<ExecOut> {
+        let final: ExecOut = new ExecOut();
+
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                this.conn = await this.connect();
+                oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+                oracledb.fetchAsString = [oracledb.CLOB];
+
+                let spl = opts.connectionString.split("@");
+                let usrpas = spl[0];
+                let conStr = spl[1];
+                let conUser = usrpas.split("/")[0];
+                let conPass = usrpas.split("/")[1];
+                this.conn = await oracledb.getConnection({ connectString: conStr, user: conUser, password: conPass });
             }
-            let query = qr;
-            if (queryTpe === "ddl") {
-                await this.dbrun(this.dbmsQry);
-                query = this.qryDDL(qr);
-                let results = await this.conn.execute(query, [], {
-                    outFormat: oracledb.OUT_FORMAT_OBJECT,
-                    fetchInfo: { "DDL": { type: oracledb.STRING } }
-                });
-                if (results?.rows) {
-                    let ddls: any[] = results?.rows;
-                    let ddlres: { [filename: string]: string[] } = {};
+
+            let query = opts.query;
+
+            if (opts.isDDL) {
+                await this.conn.execute(this.dbmsQry);
+                let ddlQuery = this.qryDDL(opts.query);
+                let ddlResults = await this.conn.execute<{ FILENAME: string, OTYPE: string, DDL: string }>(ddlQuery);
+                if (ddlResults?.rows) {
+                    let ddls: any[] = ddlResults?.rows;
                     for (let ddl of ddls) {
-                        if (!ddlres.hasOwnProperty(ddl.FILENAME)) {
-                            ddlres[ddl.FILENAME] = [];
+                        if (!final.ddlFiles.hasOwnProperty(ddl.FILENAME)) {
+                            final.ddlFiles[ddl.FILENAME] = [];
                         }
-                        ddlres[ddl.FILENAME].push(ddl.DDL);
+                        final.ddlFiles[ddl.FILENAME].push(ddl.DDL);
                     }
-                    objectType = ddls.filter(p => p.OTYPE !== "" && p.OTYPE !== null)[0].OTYPE;
-                    theddl = ddlres;
+                    objectType = ddls.filter(p => p.OTYPE !== "" && p.OTYPE !== null)[0]?.OTYPE;
                 }
-                query = "SELECT * FROM " + qr;
+                query = "SELECT * FROM " + opts.query;
             }
-            if (queryTpe === "select" || (queryTpe === "ddl" && (objectType === "TABLE" || objectType === "VIEW"))) {
-                let results = await this.dbrun(query);
-                let rows = await results.getRows(limit);
-                let cnt = rows.length + "/";
-                try {
-                    let res2 =  await this.conn.execute("Select count(*) as CNT from (" + query + ")");
-                    let rows = res2?.rows;
-                    if (rows && (rows?.length ?? 0) > 0) {
-                        let rcnt = rows[0] as any[];
-                        cnt += rcnt[0];
+
+            if (objectType === "TABLE" || objectType === "VIEW") {
+                let results = await this.conn?.execute<any>(query, [], { resultSet: true });
+                if (results.resultSet) {
+                    final.data = await results.resultSet.getRows(opts.rowLimit);
+                    final.dataCount = final.data.length + "/";
+                    try {
+                        let countResult = await this.conn.execute<{ CNT: string }>("Select count(*) as CNT from (" + query + ")");
+                        final.dataCount += countResult?.rows?.[0].CNT ?? "??";
+                    } catch {
+                        final.dataCount += "??";
                     }
-                } catch {
-                    cnt += "??";
-                }
-                return { out: [], data: rows || [], cnt: cnt, cols: null, errorOffset: null, ddl: theddl };
-            }
-            if (queryTpe === "update") {
-                let res = await this.conn.execute(query);
-                if (res.rowsAffected) {
-                    cnt = res.rowsAffected.toString();
+                } else {
+                    final.dataCount = results?.rowsAffected?.toString() ?? "";
                 }
             }
         } catch (ex) {
-            out = [ex.toString()];
-            errorOffset = ex.offset;
+            final.output = [ex.toString()];
+            final.errorOffset = ex.offset;
             console.log(ex);
         }
-        return { out: out, data: [], cnt: cnt, cols: [], errorOffset: errorOffset, ddl: {} };
-    }
 
-    async connect(): Promise<oracledb.Connection> {
-        let spl = this.con.split("@");
-        let usrpas = spl[0];
-        let conStr = spl[1];
-        let conUser = usrpas.split("/")[0];
-        let conPass = usrpas.split("/")[1];
-        return await oracledb.getConnection({ connectString: conStr, user: conUser, password: conPass });
+        return final;
     }
-
-    async dbrun(sql: string): Promise<oracledb.ResultSet<any>> {
-        return new Promise<oracledb.ResultSet<unknown>>((res, rej) => this.conn?.execute(sql, [], { resultSet: true, outFormat: oracledb.OUT_FORMAT_OBJECT, fetchInfo: { "DDL": { type: oracledb.STRING } } }, (err, rs) => err ? rej(err) : res(rs.resultSet)));
-    }
-}
-
-export class ExecOut {
-    out?: string[];
-    data?: any[];
-    cnt: string = "";
-    cols: string[] | null = [];
-    ddl?: { [filename: string]: string[] };
-    errorOffset?: number | null;
 }

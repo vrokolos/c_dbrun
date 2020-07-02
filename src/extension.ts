@@ -1,15 +1,14 @@
 import * as vscode from 'vscode';
-import { DBRun } from "./dbrun";
+import { DBRun, DbRunOptions } from "./dbrun";
 export function activate(context: vscode.ExtensionContext) {
 	let _outputChannel = vscode.window.createOutputChannel("Code");
 
-	let currentQuery = vscode.commands.registerCommand('dbrun.currentQuery', () => go(_outputChannel, {kind: 1}));
-	let describeObject = vscode.commands.registerCommand('dbrun.describeObject', () => go(_outputChannel, {kind: 2}));
-	let executeFile = vscode.commands.registerCommand('dbrun.executeFile', () => go(_outputChannel, {kind: 0}));
-	let currentQueryNW = vscode.commands.registerCommand('dbrun.currentQueryNewWindow', () => go(_outputChannel, {kind: 1, newwindow: true}));
-
-
+	let currentQuery = vscode.commands.registerCommand('dbrun.currentQuery', () => go(_outputChannel, { kind: 1 }));
+	let describeObject = vscode.commands.registerCommand('dbrun.describeObject', () => go(_outputChannel, { kind: 2 }));
+	let executeFile = vscode.commands.registerCommand('dbrun.executeFile', () => go(_outputChannel, { kind: 0 }));
+	let currentQueryNW = vscode.commands.registerCommand('dbrun.currentQueryNewWindow', () => go(_outputChannel, { kind: 1, newwindow: true }));
 	let rrun = vscode.commands.registerCommand('dbrun.run', (opt: ExtOptions) => go(_outputChannel, opt));
+
 	context.subscriptions.push(rrun);
 	context.subscriptions.push(executeFile);
 	context.subscriptions.push(describeObject);
@@ -22,8 +21,12 @@ let db = new DBRun();
 async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 	let kind = options?.kind ?? 0;
 	let nw = options?.newwindow ?? false;
-	_outputChannel.clear();
+
+	if (!nw) {
+		_outputChannel.clear();
+	}
 	_outputChannel.show(true);
+
 	const editor = vscode.window.activeTextEditor;
 	if (editor && editor?.document) {
 		let _document = editor.document;
@@ -37,20 +40,19 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 			colNumber = editor.selection.active.character + 1;
 		}
 
-		let con = vscode.workspace.getConfiguration('dbrun').get('connection') as string;
+		let con = vscode.workspace.getConfiguration('dbrun').get<string>('connection') ?? "";
 		let limit = nw ? 50 : 10;
 
-		 db.extraLog = (data: any) => _outputChannel.appendLine(data.toString());
+		db.extraLog = data => _outputChannel.appendLine(data.toString());
 
-		let doptions = {
-			inputfile: ttext,
-			con,
-			cline: lineNumber,
-			ccol: colNumber,
-			limit: limit,
-			format: options?.format ?? "text",
-			eol: editor.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n"
-		};
+		let doptions = new DbRunOptions();
+		doptions.fileText = ttext;
+		doptions.connectionString = con;
+		doptions.currentLine = lineNumber;
+		doptions.currentCol = colNumber;
+		doptions.rowLimit = limit;
+		doptions.format = options?.format ?? "text";
+		doptions.eol = editor.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
 
 		let output = await db.go(doptions);
 		if (output.errorPosition) {
@@ -59,14 +61,14 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 			editor.revealRange(new vscode.Range(newPosition, newPosition));
 		}
 
-		if (output.ddl) {
-			for (let ddl of Object.keys(output.ddl)) {
-				showText(ddl, output.ddl[ddl].join("\n"));
-			}
+		for (let ddl of Object.keys(output.files)) {
+			await showText(ddl, output.files[ddl].join(doptions.eol));
 		}
+
 		if (output.output !== "") {
 			if (nw) {
-				await showText("query" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + (options.format === "text" ? ".txt" : ".csv"), output.output);
+				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + ((options?.format ?? "text") === "text" ? ".txt" : ".csv");
+				await showText(filename, output.output);
 			} else {
 				_outputChannel.appendLine(output.output);
 			}

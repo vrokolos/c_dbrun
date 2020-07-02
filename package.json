@@ -2,8 +2,9 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.0.4",
+    "version": "0.0.6",
     "publisher": "iosifak",
+    "repository": { "url": "https://github.com/vrokolos/c_dbrun" },
     "engines": {
         "vscode": "^1.46.0"
     },

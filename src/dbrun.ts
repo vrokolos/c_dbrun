@@ -3,25 +3,21 @@ import Table from 'cli-table3';
 import { matchAll } from "./utils";
 import { Oracle } from "./oracle";
 import { ExportToCsv } from 'export-to-csv';
+import { Executor } from "./iDB";
 
 export class DBRun {
-    private con = "";
-    private limit = 10;
-    private cline = 0;
-    private ccol = 0;
-    private eol = "\n";
     private subqueryStart = 0;
 
     private output: string[] = [];
 
-    public runner = new Oracle();
+    public runner: Executor = new Oracle();
 
-    GetCurrentWord(text: string): string {
-        let tests = text.split(this.eol);
-        let currentLine = tests[this.cline - 1];
-        let delim = [" ", ",", "(", ")", this.eol, "'"];
+    GetCurrentWord(text: string, eol: string, cline: number = 0, ccol: number = 0): string {
+        let tests = text.split(eol);
+        let currentLine = tests[cline - 1];
+        let delim = [" ", ",", "(", ")", eol, "'"];
         let startCol = 0;
-        for (let i = this.ccol; i >= 0; i--) {
+        for (let i = ccol; i >= 0; i--) {
             let curChar = currentLine[i] || "";
             if (delim.indexOf(curChar) > -1) {
                 startCol = i + 1;
@@ -29,7 +25,7 @@ export class DBRun {
             }
         }
         let endCol = currentLine.length;
-        for (let i = this.ccol; i < currentLine.length; i++) {
+        for (let i = ccol; i < currentLine.length; i++) {
             let curLine = currentLine[i] || "";
             if (delim.indexOf(curLine) > -1) {
                 endCol = i;
@@ -40,14 +36,15 @@ export class DBRun {
         return query;
     }
 
-    GetCurrentQuery(text: string): string {
-        let tests = text.split(this.eol);
-        if (!tests[this.cline] || tests[this.cline].trim() === "") {
-            this.cline--;
+    GetCurrentQuery(text: string, eol: string, cline: number = 0): string {
+        let line = cline;
+        let tests = text.split(eol);
+        if (!tests[line] || tests[line].trim() === "") {
+            line--;
         }
         let startLine = 0;
 
-        for (let i = this.cline; i >= 0; i--) {
+        for (let i = line; i >= 0; i--) {
             let curLine = tests[i] || "";
             if (curLine.trim() === "") {
                 startLine = i + 1;
@@ -55,7 +52,7 @@ export class DBRun {
             }
         }
         let endLine = tests.length;
-        for (let i = this.cline; i < tests.length; i++) {
+        for (let i = line; i < tests.length; i++) {
             let curLine = tests[i] || "";
             if (curLine.trim() === "") {
                 endLine = i;
@@ -64,21 +61,21 @@ export class DBRun {
         }
         let query = "";
         for (let q = startLine; q < endLine; q++) {
-            query = query + tests[q] + this.eol;
+            query = query + tests[q] + eol;
         }
         this.subqueryStart = startLine;
         return query;
     }
 
-    FetchQuery(file2: string): string {
-        if (this.ccol !== 0) {
-            let wrd = this.GetCurrentWord(file2);
+    FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0): string {
+        if (ccol !== 0) {
+            let wrd = this.GetCurrentWord(file2, eol);
             wrd = wrd.toUpperCase();
             file2 = wrd;
-        } else if (this.cline !== 0) {
-            file2 = this.GetCurrentQuery(file2);
+        } else if (cline !== 0) {
+            file2 = this.GetCurrentQuery(file2, eol, cline);
         }
-        let file2res = file2.split(this.eol).filter(p => p !== "").join(this.eol);
+        let file2res = file2.split(eol).filter(p => p !== "").join(eol);
         let patt = /--(\:.*?)\s?=\s?(.*)/gi;
         let result = matchAll(file2, patt);
         for (let match of result) {
@@ -90,68 +87,29 @@ export class DBRun {
         return file2res;
     }
 
-    detectQueryType(file2res: string): string {
-        if (this.ccol !== 0) {
-            return "ddl";
-        }
-        for (let line of file2res.split(this.eol)) {
-            let upperLine = line.toUpperCase().trim();
-            if (!upperLine.startsWith("--")) {
-                if (upperLine.startsWith("SELECT") || upperLine.startsWith("WITH")) {
-                    return "select";
-                } else if (upperLine.startsWith("BEGIN") || upperLine.startsWith("DECLARE")) {
-                    return "block";
-                } else {
-                    return "update";
-                }
-            }
-        }
-        return "";
-    }
-
     log(data: any) {
         console.log(data);
         this.output.push(data);
-    //    this.extraLog(data);
     }
 
     extraLog(data: any) { /* */ }
 
-    private show(js: any, cols: any[] | null, format: string = "text"): string {
+    private show(js: object[], format: string = "text"): string {
         let output = "";
         if (format === "text") {
-            let headCols = cols;
-            if (!headCols) {
-                headCols = Object.keys(js[0]);
-            }
+            let headCols = Object.keys(js[0]);
             var table = new Table({
                 chars: { 'top-mid': '', 'bottom-mid': '', "mid-mid": '', "middle": '' },
                 head: headCols,
                 style: { head: [], border: [], compact: true },
                 wordWrap: false
             });
-            if (cols) {
-                for (let j of js) {
-                    table.push(j);
-                }
-            } else {
-                for (let j of js) {
-                    let vals: any[] = Object.values(j);
-                    table.push(vals);
-                }
+            for (let j of js) {
+                table.push(Object.values(j));
             }
             output = table.toString();
         } else {
-            const options = { 
-                fieldSeparator: ',',
-                quoteStrings: '"',
-                decimalSeparator: '.',
-                showLabels: true, 
-                useTextFile: false,
-                useKeysAsHeaders: true
-              };
-             
-            const csvExporter = new ExportToCsv(options);
+            const csvExporter = new ExportToCsv({ fieldSeparator: ',', quoteStrings: '"', decimalSeparator: '.', showLabels: true, useKeysAsHeaders: true });
             output = csvExporter.generateCsv(js, true);
         }
         return output;
@@ -164,47 +122,41 @@ export class DBRun {
 
     async go(options: DbRunOptions): Promise<DbRunOutput> {
         this.output = [];
-        this.con = options.con;
-        this.limit = options.limit || 10;
-        this.cline = options.cline || 0;
-        this.ccol = options.ccol || 0;
-        this.eol = options.eol || "\n";
-        let output: DbRunOutput = { output: "" };
+        let output = new DbRunOutput();
 
-        if (!this.con) {
+        if (!options.connectionString) {
             console.log("no connection string defined");
             throw new Error("dbrun => No connection string defined. Set one in settings");
         }
 
-        let qr = this.FetchQuery(options.inputfile);
-        let queryTpe = this.detectQueryType(qr);
-
+        let qr = this.FetchQuery(options.fileText, options.eol, options.currentLine, options.currentCol);
         let stopwatch = performance.now();
-        let rr = await this.runner.exec(this.con, qr, this.limit, queryTpe, this.eol);
+        let rr = await this.runner.exec({ connectionString: options.connectionString, query: qr, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
         let ms = Math.round(performance.now() - stopwatch);
-        if (rr.out) {
-            rr.out.map((s) => this.log(s));
+
+        if (rr.output) {
+            rr.output.map((s) => this.log(s));
         }
         if (rr.data && rr.data.length > 0) {
-            let output1 = this.show(rr.data, rr.cols, options.format);
+            let output1 = this.show(rr.data, options.format);
             this.log(output1);
         }
-        this.printCNT(rr.cnt, ms);
+        this.printCNT(rr.dataCount, ms);
 
         if (rr.errorOffset) {
-            let pos = this.getPositionFromOffset(qr, rr.errorOffset, this.eol);
-            if (pos !== null && options.cline !== 0 && options.ccol === 0) {
+            let pos = this.getPositionFromOffset(qr, rr.errorOffset, options.eol);
+            if (pos !== null && options.currentLine !== 0 && options.currentCol === 0) {
                 pos.line += this.subqueryStart;
             }
             output.errorPosition = pos;
         }
-        output.ddl = rr.ddl;
-        output.output = this.output.join(this.eol);
+        output.files = rr.ddlFiles;
+        output.output = this.output.join(options.eol);
         return output;
     }
 
     getPositionFromOffset(text: string, offset: number, eol: string): Position {
-        let r = { line: 0, col: 0 };
+        let r = new Position();
         let curPos = 0;
         let lineNo = 1;
         for (let line of text.split(eol)) {
@@ -222,24 +174,24 @@ export class DBRun {
             }
             lineNo++;
         }
-        return { line: 0, col: 0 };
+        return new Position();
     }
 }
 
 export class DbRunOptions {
-    inputfile: string = "";
-    con: string = "";
-    limit?: number;
-    cline?: number;
-    ccol?: number;
-    eol?: string;
-    format?: string = "text";
+    fileText: string = "";
+    connectionString: string = "";
+    rowLimit: number = 10;
+    currentLine: number = 0;
+    currentCol: number = 0;
+    eol: string = "\n";
+    format: string = "text";
 }
 
 export class DbRunOutput {
     errorPosition?: Position;
     output: string = "";
-    ddl?: { [filename: string]: string[] };
+    files: { [filename: string]: string[] } = {};
 }
 
 export class Position {

@@ -1,2 +1,1 @@
-select * from emp_employees
-
+select 1 from dual

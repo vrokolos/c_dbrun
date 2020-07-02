@@ -1,7 +1,4 @@
-/dbrun-0.0.1.vsix
-/dbrun-0.0.2.vsix
-/dbrun-0.0.3.vsix
-/dbrun-0.0.4.vsix
+*.vsix
 /node_modules
 /out
 /package-lock.json
