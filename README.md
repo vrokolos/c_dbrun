@@ -3,9 +3,10 @@ Run SQL commands. **Only oracle support currently**.
 
 ## Configuration
 Used in vscode settings:
+
 KEY | DESCRIPTION
 -- | --
-dbrun.connection | Connection string to be used in this format: username/password@host:port/servicename
+dbrun.connection | Connection string to be used in this format: **username/password@host:port/servicename**
 dbrun.rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
 
 ## Example Output
@@ -29,14 +30,14 @@ Rows: [10/35]        Time: 161 ms
 ```
 
 ## Default Shortcuts
- For use only in .sql files
+For use only in .sql files
 
- KEY | ACTION
- -|-
- f4 | describe current object (word)
- f9 | execute current file
- ctrl+enter | execute current query. Output: VsCode Output
- ctrl+shift+enter | execute current query. Output: New Editor
+KEY | ACTION
+-|-
+f4 | describe current object (word)
+f9 | execute current file
+ctrl+enter | execute current query. Output: VsCode Output
+ctrl+shift+enter | execute current query. Output: New Editor
 
 ## Usage
 
@@ -54,6 +55,7 @@ This is a generic command that accepts one single json object with these propert
 	format?: string = "text";
 }
 ```
+
 ARG | VALUE | DESCRIPTION
 -- | -- | --
 kind | 0 | executes whole file **(default)**
