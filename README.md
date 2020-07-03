@@ -4,9 +4,9 @@ Run SQL commands. **Only oracle support currently**.
 ## Configuration
 Used in vscode settings:
 KEY | DESCRIPTION
--|-
-dbrun.connection | Connection string to be used in this format: "username/password@host:port/servicename"
-rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
+-- | --
+dbrun.connection | Connection string to be used in this format: username/password@host:port/servicename
+dbrun.rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
 
 ## Example Output
 
@@ -46,7 +46,7 @@ Do not end your commands with a semicolon ";", it will result in an error being 
 
 ## dbrun.run
 
-This is a generic command that accept one single json object with these properties to be used on custom keybindings
+This is a generic command that accepts one single json object with these properties to be used in custom keybindings
 ``` js
 {
 	kind?: number = 0;
@@ -54,7 +54,7 @@ This is a generic command that accept one single json object with these properti
 	format?: string = "text";
 }
 ```
-arg | type | description 
+ARG | VALUE | DESCRIPTION
 -- | -- | --
 kind | 0 | executes whole file **(default)**
 kind | 1 | executes current query 
