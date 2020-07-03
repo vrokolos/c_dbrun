@@ -143,14 +143,14 @@ export class DBRun {
             this.log(output1);
         }
         this.printCNT(rr.dataCount, ms);
-
-        if (rr.errorOffset) {
-            let pos = this.getPositionFromOffset(qr, rr.errorOffset, options.eol);
-            if (pos !== null && options.currentLine !== 0 && options.currentCol === 0) {
-                pos.line += this.subqueryStart;
+        
+        if (rr.errorOffset !== null) {
+            output.errorPosition = rr.errorOffset instanceof Position ? rr.errorOffset : this.getPositionFromOffset(qr, rr.errorOffset, options.eol);
+            if (options.currentLine !== 0 && options.currentCol === 0) {
+                output.errorPosition.line += this.subqueryStart;
             }
-            output.errorPosition = pos;
         }
+
         output.files = rr.ddlFiles;
         output.output = this.output.join(options.eol);
         return output;

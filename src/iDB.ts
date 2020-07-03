@@ -1,3 +1,5 @@
+import { Position } from "./dbrun";
+
 export interface Executor {
     exec(opts: ExecIn): Promise<ExecOut>;
 }
@@ -7,7 +9,7 @@ export class ExecOut {
     data: any[] = [];
     dataCount: string = "";
     ddlFiles: { [filename: string]: string[] } = {};
-    errorOffset: number | null = null;
+    errorOffset: number | null | Position = null;
 }
 
 export class ExecIn {

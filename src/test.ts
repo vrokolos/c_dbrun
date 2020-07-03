@@ -6,7 +6,7 @@ let tstart = async () => {
     let inputfile = fs.readFileSync("test.sql", "utf8");
     let con = argv[5] || fs.readFileSync("c:/temp/con.ini", "utf8");
     let limit = 10;
-    let cline = 1;
+    let cline = 3;
     let ccol = 0;
     let eol = "\r\n";
     let db = new DBRun();
