@@ -29,8 +29,16 @@ Rows: [10/35]        Time: 161 ms
 └───────────────────────────────┘
 ```
 
+If the output window get wrapped and messes your results use: 
+
+``` js
+	"[Log]": { "editor.wordWrap": "off" },
+```
+
+in your settings file
+
 ## Default Shortcuts
-For use only in .sql files
+For use only in "sql" language files (ctrl-k m sql)
 
 KEY | ACTION
 -|-

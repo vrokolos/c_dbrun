@@ -88,7 +88,7 @@ export class DBRun {
     }
 
     log(data: any) {
-        console.log(data);
+        //console.log(data);
         this.output.push(data);
     }
 
@@ -116,8 +116,9 @@ export class DBRun {
     }
 
     printCNT(cnter: string | null, milliSec: number) {
-        let rr = cnter ? "Rows: [" + cnter + "]        " : "";
-        this.extraLog(rr + "Time: " + milliSec + " ms");
+        let header = "dbrun ";
+        let rr = cnter ? "rows: [" + cnter + "]        " : "";
+        this.extraLog(header + rr + "time: " + milliSec + " ms");
     }
 
     async go(options: DbRunOptions): Promise<DbRunOutput> {

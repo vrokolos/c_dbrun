@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "publisher": "iosifak",
     "repository": { "url": "https://github.com/vrokolos/c_dbrun" },
     "engines": {
@@ -88,7 +88,26 @@
                 },
                 "when": "editorTextFocus && editorLangId == 'sql'"
             }
-        ]
+        ],
+        "languages": [{
+            "id": "dbrun",
+            "extensions": [
+                ".log"
+            ],
+            "aliases": ["dbrun"],
+            "mimetypes": [
+                "log",
+                "text/log",
+                "text/x-log",
+                "text/x-code-output",
+                "x-code-output"
+            ]
+        }],
+        "grammars": [{
+            "language": "dbrun",
+            "scopeName": "dbrun.log",
+            "path": "./dbrun.tmLanguage"
+        }]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { DBRun, DbRunOptions } from "./dbrun";
 export function activate(context: vscode.ExtensionContext) {
-	let _outputChannel = vscode.window.createOutputChannel("Code");
-
+	let _outputChannel = vscode.window.createOutputChannel("dbrun");
 	let currentQuery = vscode.commands.registerCommand('dbrun.currentQuery', () => go(_outputChannel, { kind: 1 }));
 	let describeObject = vscode.commands.registerCommand('dbrun.describeObject', () => go(_outputChannel, { kind: 2 }));
 	let executeFile = vscode.commands.registerCommand('dbrun.executeFile', () => go(_outputChannel, { kind: 0 }));
@@ -17,6 +16,21 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 let db = new DBRun();
+
+function changeLogLang() {
+	for (const editor of vscode.window.visibleTextEditors) {
+		console.log(editor.document.fileName);
+		if (editor.document.fileName.startsWith('extension-output-')) {
+			if (editor.document.lineAt(0).text.startsWith("dbrun")) {
+				console.log("dbrun");
+				vscode.languages.setTextDocumentLanguage(editor.document, 'dbrun');
+			} else {
+				console.log("not dbrun");
+				vscode.languages.setTextDocumentLanguage(editor.document, 'Log');
+			}
+		}
+	}
+}
 
 async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 	let kind = options?.kind ?? 0;
@@ -64,7 +78,7 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 		}
 
 		for (let ddl of Object.keys(output.files)) {
-			await showText(ddl, output.files[ddl].join(doptions.eol));
+			await showText(ddl + ".sql", output.files[ddl].join(doptions.eol));
 		}
 
 		if (output.output !== "") {
@@ -75,12 +89,13 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 				_outputChannel.appendLine(output.output);
 			}
 		}
+		setTimeout(() => changeLogLang(), 1000);
 	}
 }
 
 async function showText(title: string, output: string) {
 	let textdoc = await vscode.workspace.openTextDocument(vscode.Uri.parse(`untitled:${title}`));
-	let textshow = await vscode.window.showTextDocument(textdoc, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
+	let textshow = await vscode.window.showTextDocument(textdoc, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
 	let firstLine = textshow.document.lineAt(0);
 	let lastLine = textshow.document.lineAt(textshow.document.lineCount - 1);
 	let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
