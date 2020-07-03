@@ -69,7 +69,7 @@ export class DBRun {
 
     FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0): string {
         if (ccol !== 0) {
-            let wrd = this.GetCurrentWord(file2, eol);
+            let wrd = this.GetCurrentWord(file2, eol, cline, ccol);
             wrd = wrd.toUpperCase();
             file2 = wrd;
         } else if (cline !== 0) {

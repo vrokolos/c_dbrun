@@ -40,8 +40,10 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 			colNumber = editor.selection.active.character + 1;
 		}
 
-		let con = vscode.workspace.getConfiguration('dbrun').get<string>('connection') ?? "";
-		let limit = nw ? 50 : 10;
+		let conf = vscode.workspace.getConfiguration('dbrun');
+		let con = conf.get<string>('connection') ?? "";
+		let lim = conf.get<number>('rowLimit') ?? 10;
+		let limit = lim ?? (nw ? 50 : 10);
 
 		db.extraLog = data => _outputChannel.appendLine(data.toString());
 

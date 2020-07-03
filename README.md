@@ -1,10 +1,12 @@
 # dbrun (EARLY BETA)
 Run SQL commands. **Only oracle support currently**. 
 
-There is currently a hardcode **limit of 10/50 rows** per query. Will make it configurable later
-
 ## Configuration
-In your settings set **dbrun.connection** with this format: "username/password@host:port/servicename"
+Used in vscode settings:
+KEY | DESCRIPTION
+-|-
+dbrun.connection | Connection string to be used in this format: "username/password@host:port/servicename"
+rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
 
 ## Example Output
 

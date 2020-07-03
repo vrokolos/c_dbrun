@@ -13,6 +13,9 @@ let tstart = async () => {
     db.extraLog = console.log;
     let out = await db.go({ fileText: inputfile, connectionString: con, rowLimit: limit, currentLine: cline, currentCol: ccol, eol, format: "text" });
     console.log("Files: " + Object.keys(out.files).join(", "));
+    for (let p of Object.keys(out.files)){
+        console.log(out.files[p].join("\n"));
+    }
 };
 
 tstart();

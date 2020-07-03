@@ -13,13 +13,9 @@ export class Oracle implements Executor {
     end;
 `;
     public qryDDL(wrd: string): string {
-        return `select object_type as otype, '${wrd}' as filename, to_clob('/* ' || OBJECT_NAME || '        TYPE: ' || object_type || '          LAST DDL: ' || to_char(last_ddl_time, 'dd/mm/yyyy hh24:mi') || ' */') as DDL from user_objects where OBJECT_NAME = '${wrd}'
-union all select null as otype, '${wrd}' as filename, '/* ' || replace(wm_concat(column_name), ',', ', ') || ' */' as DDL from cols where table_name = '${wrd}'
-union all select null as otype, '${wrd}' as filename, '/* ' || replace(wm_concat('a.' || column_name), ',', ', ') || ' */' from cols where table_name = '${wrd}'
-union all select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || ';' || CHR(13) || '/' as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
+        return `select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || ';' || CHR(13) || '/' as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
 union all SELECT null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('INDEX', a.INDEX_NAME)  || ';' || CHR(13) || '/' AS DDL FROM user_indexes a WHERE table_name = '${wrd}'
-union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';' || CHR(13) || '/' FROM user_triggers a WHERE table_name = '${wrd}'
-`;
+union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';' || CHR(13) || '/' FROM user_triggers a WHERE table_name = '${wrd}'`;
     }
 
     public async exec(opts: ExecIn): Promise<ExecOut> {
@@ -60,6 +56,13 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
 
             if (objectType === "TABLE" || objectType === "VIEW") {
                 let results = await this.conn?.execute<any>(query, [], { resultSet: true });
+                if (results.metaData) {
+                    for (let ddl of Object.keys(final.ddlFiles)) {
+                        let newlines = ["/* " + results.metaData.map(p => p.name).join(", ") + " */", 
+                        "/* " + results.metaData.map(p => "A." + p.name).join(", ") + " */"]
+                        final.ddlFiles[ddl] = newlines.concat(final.ddlFiles[ddl]);
+                    }
+                }
                 if (results.resultSet) {
                     final.data = await results.resultSet.getRows(opts.rowLimit);
                     final.dataCount = final.data.length + "/";

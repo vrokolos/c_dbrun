@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "publisher": "iosifak",
     "repository": { "url": "https://github.com/vrokolos/c_dbrun" },
     "engines": {
@@ -48,6 +48,11 @@
                     "type": "string",
                     "default": false,
                     "description": "Connection to be used. Format: user/password@host:port/database"
+                },
+                "dbrun.rowLimit": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Number of rows to fetch for each SQL query"
                 }
             }
         },
