@@ -9,6 +9,7 @@ let tstart = async () => {
     let cline = 12;
     let ccol = 0;
     let eol = "\r\n";
+    
     let db = new DBRun();
     db.extraLog = console.log;
     let out = await db.go({ fileText: inputfile, connectionString: con, rowLimit: limit, currentLine: cline, currentCol: ccol, eol, format: "text" });
