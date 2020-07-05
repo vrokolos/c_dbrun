@@ -2,17 +2,18 @@ import * as vscode from 'vscode';
 import { DBRun, DbRunOptions } from "./dbrun";
 export function activate(context: vscode.ExtensionContext) {
 	let _outputChannel = vscode.window.createOutputChannel("dbrun");
-	let currentQuery = vscode.commands.registerCommand('dbrun.currentQuery', () => go(_outputChannel, { kind: 1 }));
-	let describeObject = vscode.commands.registerCommand('dbrun.describeObject', () => go(_outputChannel, { kind: 2 }));
-	let executeFile = vscode.commands.registerCommand('dbrun.executeFile', () => go(_outputChannel, { kind: 0 }));
-	let currentQueryNW = vscode.commands.registerCommand('dbrun.currentQueryNewWindow', () => go(_outputChannel, { kind: 1, newwindow: true }));
-	let rrun = vscode.commands.registerCommand('dbrun.run', (opt: ExtOptions) => go(_outputChannel, opt));
 
-	context.subscriptions.push(rrun);
-	context.subscriptions.push(executeFile);
-	context.subscriptions.push(describeObject);
-	context.subscriptions.push(currentQuery);
-	context.subscriptions.push(currentQueryNW);
+	let commands: {[command: string]: any } = {
+		'dbrun.currentQuery': () => go(_outputChannel, { kind: 1 }),
+		'dbrun.describeObject': () => go(_outputChannel, { kind: 2 }),
+		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
+		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
+		'dbrun.run': (opt: ExtOptions) => go(_outputChannel, opt)
+	};
+
+	for (let command of Object.keys(commands)) {
+		context.subscriptions.push(vscode.commands.registerCommand(command, commands[command]));
+	}
 }
 
 let db = new DBRun();

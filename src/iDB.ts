@@ -15,6 +15,16 @@ export class ExecOut {
 export class ExecIn {
     connectionString: string = "";
     query: string = "";
+    params?: ExecParam[] = [];
     rowLimit: number = 10;
     isDDL: boolean = false;
+}
+
+export class ExecParam {
+    name: string;
+    value: any;
+
+    constructor(name: string) {
+        this.name = name;
+    }
 }

@@ -1,9 +1,9 @@
 import { performance } from "perf_hooks";
 import Table from 'cli-table3';
 import { matchAll } from "./utils";
-import { Oracle } from "./oracle";
+import { Oracle } from "./executors/oracle";
 import { ExportToCsv } from 'export-to-csv';
-import { Executor } from "./iDB";
+import { Executor, ExecParam } from "./iDB";
 
 export class DBRun {
     private subqueryStart = 0;
@@ -67,7 +67,7 @@ export class DBRun {
         return query;
     }
 
-    FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0): string {
+    FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[] } {
         if (ccol !== 0) {
             let wrd = this.GetCurrentWord(file2, eol, cline, ccol);
             wrd = wrd.toUpperCase();
@@ -75,16 +75,35 @@ export class DBRun {
         } else if (cline !== 0) {
             file2 = this.GetCurrentQuery(file2, eol, cline);
         }
+        let params: ExecParam[] = [];
         let file2res = file2.split(eol).filter(p => p !== "").join(eol);
         let patt = /--(\:.*?)\s?=\s?(.*)/gi;
         let result = matchAll(file2, patt);
         for (let match of result) {
             let pName = match[1];
             let pValue = match[2];
-            let reg = new RegExp(pName, "ig");
-            file2res = file2res.replace(reg, pValue);
+            if (file2.toUpperCase().split(pName.toUpperCase()).length > 2) {
+                let param = new ExecParam(pName);
+                if (/^-?\d+\.?\d*$/.test(pValue)) {
+                    param.value = parseFloat(pValue);
+                } else if (pValue.startsWith("'") && pValue.endsWith("'")) {
+                    param.value = pValue.substr(1, pValue.length - 2);
+                } else {
+                    let theDate = Date.parse(pValue);
+                    if (theDate) {
+                        param.value = new Date(theDate);
+                    } else {
+                        param.value = pValue;
+                    }
+                }
+                params.push(param);
+            }
+            if (replaceParams) {
+                let reg = new RegExp(pName, "ig");
+                file2res = file2res.replace(reg, pValue);
+            }
         }
-        return file2res;
+        return { query: file2res, params: params };
     }
 
     log(data: any) {
@@ -105,6 +124,12 @@ export class DBRun {
                 wordWrap: false
             });
             for (let j of js) {
+                for (let col of headCols) {
+                    let k = j as any;
+                    if (k[col] && k[col].replace) {
+                        k[col] = k[col].replace(/\s00\:00\:00/g, "");
+                    }
+                }
                 table.push(Object.values(j));
             }
             output = table.toString();
@@ -130,9 +155,9 @@ export class DBRun {
             throw new Error("dbrun => No connection string defined. Set one in settings");
         }
 
-        let qr = this.FetchQuery(options.fileText, options.eol, options.currentLine, options.currentCol);
+        let qr = this.FetchQuery(options.fileText, options.eol, options.currentLine, options.currentCol, false);
         let stopwatch = performance.now();
-        let rr = await this.runner.exec({ connectionString: options.connectionString, query: qr, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
+        let rr = await this.runner.exec({ connectionString: options.connectionString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
         let ms = Math.round(performance.now() - stopwatch);
 
         if (rr.output) {
@@ -143,9 +168,9 @@ export class DBRun {
             this.log(output1);
         }
         this.printCNT(rr.dataCount, ms);
-        
+
         if (rr.errorOffset !== null) {
-            output.errorPosition = rr.errorOffset instanceof Position ? rr.errorOffset : this.getPositionFromOffset(qr, rr.errorOffset, options.eol);
+            output.errorPosition = rr.errorOffset instanceof Position ? rr.errorOffset : this.getPositionFromOffset(qr.query, rr.errorOffset, options.eol);
             if (options.currentLine !== 0 && options.currentCol === 0) {
                 output.errorPosition.line += this.subqueryStart;
             }

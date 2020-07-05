@@ -29,13 +29,12 @@ Rows: [10/35]        Time: 161 ms
 └───────────────────────────────┘
 ```
 
-If the output window get wrapped and messes your results use: 
+If the output window get wrapped and messes your results up use this in your vscode settings file: 
 
 ``` js
-	"[Log]": { "editor.wordWrap": "off" },
+	"[Log]": { "editor.wordWrap": "off" }
 ```
 
-in your settings file
 
 ## Default Shortcuts
 For use only in "sql" language files (ctrl-k m sql)
@@ -69,28 +68,28 @@ ARG | VALUE | DESCRIPTION
 kind | 0 | executes whole file **(default)**
 kind | 1 | executes current query 
 kind | 2 | describes current word / object
-newwindow |false | pipes all output to vsCode output panel
+newwindow |false | pipes all output to vsCode output panel **(default)**
 newwindow | true | pipes data output to a new vsCode editor and all other output to vscode output panel
-format | "text" | generates text ascii data table for resultsets
+format | "text" | generates text ascii data table for resultsets **(default)**
 format | "csv" | generates csv table for resultsets
 
 ## Query Parameters
 You can use parameters in your files like ":THEID"
 
-At the beggining of your sql file you should add each parameter with the "--:PARAM=VALUE" style
+At the beggining of your sql file you should add each parameter using this format: "--:PARAM=VALUE"
 
 Example:
 ``` sql
 --:THEID=3
---:THEDATE=TO_DATE('01/01/1900', 'dd/mm/yyyy')
---:THESTRING='HELLO'
+--:THEDATE=01/01/1900
+--:THESTRING=HELLO
 SELECT :THEDATE AS DATEVAL, 
        :THESTRING AS STRINGVAL, 
        :THEID AS NUMBERVAL 
 FROM DUAL
 ```
 
-Currently these get substituted during execution and they're not bound by oracle
+dbrun tries to automatically detect the type of the parameter using sophisticated skynet-level AI: if (parsed != nan) etc
 
 ## Transactions
 Everything is run under a single transaction and you should run "commit" to commit the changes
