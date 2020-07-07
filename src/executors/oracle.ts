@@ -24,6 +24,11 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
         return `select * from user_errors where NAME = '${wrd.toUpperCase()}'`;
     }
 
+    public async getObjects(conString: string): Promise<{ name: string, type: string }[]> {
+        let res = await this.exec({ connectionString: conString, query: "SELECT OBJECT_NAME, OBJECT_TYPE FROM USER_OBJECTS WHERE OBJECT_TYPE in ('TABLE', 'VIEW', 'FUNCTION', 'PROCEDURE', 'PACKAGE')", rowLimit: 999999, params: [], isDDL: false });
+        return res.data.map(p => ({ name: p.OBJECT_NAME, type: p.OBJECT_TYPE }));
+    }
+
     public async exec(opts: ExecIn): Promise<ExecOut> {
         let final: ExecOut = new ExecOut();
 

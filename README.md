@@ -9,6 +9,8 @@ KEY | DESCRIPTION
 dbrun.connection | Connection string to be used in this format: **username/password@host:port/servicename**
 dbrun.rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
 
+Note that the rowLimit option is ignored when you open the results in a new window and the limit there is a hardcoded 99000
+
 ## Example Output
 
 ```
@@ -72,6 +74,9 @@ newwindow |false | pipes all output to vsCode output panel **(default)**
 newwindow | true | pipes data output to a new vsCode editor and all other output to vscode output panel
 format | "text" | generates text ascii data table for resultsets **(default)**
 format | "csv" | generates csv table for resultsets
+
+## Autocomplete
+Initial support added for autocompletion of tables, views, functions, procedures, packages. Only their name is fetched currently. They get fetched only when you manually use "ctrl+space" and the names get cached until you reload vscode
 
 ## Query Parameters
 You can use parameters in your files like ":THEID"

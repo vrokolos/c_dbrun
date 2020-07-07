@@ -145,6 +145,11 @@ export class DBRun {
         let rr = cnter ? "rows: [" + cnter + "]        " : "";
         this.extraLog(header + rr + "time: " + milliSec + " ms");
     }
+    
+    async getObjects(conString: string): Promise<any[]> {
+        let res = await this.runner.getObjects(conString);
+        return res;
+    }
 
     async go(options: DbRunOptions): Promise<DbRunOutput> {
         this.output = [];

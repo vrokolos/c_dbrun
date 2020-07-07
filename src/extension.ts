@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { DBRun, DbRunOptions } from "./dbrun";
+import { SqlAutoComplete } from "./autocomplete";
+
+let db = new DBRun();
+
 export function activate(context: vscode.ExtensionContext) {
 	let _outputChannel = vscode.window.createOutputChannel("dbrun");
 
-	let commands: {[command: string]: any } = {
+	let commands: { [command: string]: any } = {
 		'dbrun.currentQuery': () => go(_outputChannel, { kind: 1 }),
 		'dbrun.describeObject': () => go(_outputChannel, { kind: 2 }),
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
@@ -14,13 +18,11 @@ export function activate(context: vscode.ExtensionContext) {
 	for (let command of Object.keys(commands)) {
 		context.subscriptions.push(vscode.commands.registerCommand(command, commands[command]));
 	}
+	context.subscriptions.push(vscode.languages.registerCompletionItemProvider("sql", new SqlAutoComplete(db, vscode.workspace.getConfiguration('dbrun')?.get<string>('connection') ?? "")));
 }
-
-let db = new DBRun();
 
 function changeLogLang() {
 	for (const editor of vscode.window.visibleTextEditors) {
-		console.log(editor.document.fileName);
 		if (editor.document.fileName.startsWith('extension-output-')) {
 			if (editor.document.lineAt(0).text.startsWith("dbrun")) {
 				console.log("dbrun");
@@ -58,10 +60,9 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 		let conf = vscode.workspace.getConfiguration('dbrun');
 		let con = conf.get<string>('connection') ?? "";
 		let lim = conf.get<number>('rowLimit') ?? 10;
-		let limit = lim ?? (nw ? 50 : 10);
+		let limit = nw ? 99000 : lim;
 
 		db.extraLog = data => _outputChannel.appendLine(data.toString());
-
 		let doptions = new DbRunOptions();
 		doptions.fileText = ttext;
 		doptions.connectionString = con;
@@ -84,7 +85,7 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 
 		if (output.output !== "") {
 			if (nw) {
-				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + ((options?.format ?? "text") === "text" ? ".txt" : ".csv");
+				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + (doptions.format === "text" ? ".txt" : ".csv");
 				await showText(filename, output.output);
 			} else {
 				_outputChannel.appendLine(output.output);
@@ -96,6 +97,9 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 
 async function showText(title: string, output: string) {
 	let textdoc = await vscode.workspace.openTextDocument(vscode.Uri.parse(`untitled:${title}`));
+	if (title.endsWith("txt")) {
+		vscode.languages.setTextDocumentLanguage(textdoc, "dbrun");
+	}
 	let textshow = await vscode.window.showTextDocument(textdoc, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
 	let firstLine = textshow.document.lineAt(0);
 	let lastLine = textshow.document.lineAt(textshow.document.lineCount - 1);
