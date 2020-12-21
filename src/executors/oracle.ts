@@ -11,11 +11,12 @@ export class Oracle implements Executor {
         DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SEGMENT_ATTRIBUTES', false);
         DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'TABLESPACE', false);
         dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'EMIT_SCHEMA', false);
-        dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'PRETTY', true);
+        dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'PRETTY', false);
+        DBMS_METADATA.SET_TRANSFORM_PARAM (DBMS_METADATA.SESSION_TRANSFORM, 'SQLTERMINATOR',false);
     end;
 `;
     public qryDDL(wrd: string): string {
-        return `select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || ';' || CHR(13) || '/' as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
+        return `select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || CHR(13) as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
 union all SELECT null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('INDEX', a.INDEX_NAME)  || ';' || CHR(13) || '/' AS DDL FROM user_indexes a WHERE table_name = '${wrd}'
 union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';' || CHR(13) || '/' FROM user_triggers a WHERE table_name = '${wrd}'`;
     }
@@ -66,6 +67,7 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                 query = "SELECT * FROM " + opts.query;
             }
 
+            let rowsAffected = 0;
             if (objectType === "TABLE" || objectType === "VIEW") {
 
                 let params: oracledb.BindParameters = {};
@@ -93,30 +95,31 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     } catch {
                         final.dataCount += "??";
                     }
-                } else {
-                    final.dataCount = results?.rowsAffected?.toString() ?? "";
-                    try {
-                        if (results?.rowsAffected === 0) {
-                            let regx = /CREATE .*?\s(\w*?)(?:\(|\sAS)/gi;
-                            let result = matchAll(query, regx);
-                            for (let match of result) {
-                                let pName = match[1].trim();
-                                let errorQry = this.errorQry(pName);
-                                let errorRes = await this.conn.execute<{ NAME: string, TYPE: string, LINE: number, POSITION: number, TEXT: string, ATTRIBUTE: string }>(errorQry);
-                                let errorRows = errorRes.rows;
-                                if (errorRows && errorRows.length !== 0) {
-                                    final.output = errorRows.map(p => "Error: " + p.TEXT + " (Line: " + p.LINE + " Column: " + p.POSITION + ")") ?? [];
-                                    final.errorOffset = new Position();
-                                    final.errorOffset.line = errorRows[0].LINE;
-                                    final.errorOffset.col = errorRows[0].POSITION - 1;
-                                }
-                                break;
-                            }
+                }
+                rowsAffected = results?.rowsAffected || 0;
+            }
+           
+            final.dataCount = rowsAffected?.toString() ?? "";
+            try {
+                if (rowsAffected === 0) {
+                    let regx = /CREATE\s.*?\s\"?(\w*?)\"?\s(?:IS|AS)/gi;
+                    let result = matchAll(query, regx);
+                    for (let match of result) {
+                        let pName = match[1].trim();
+                        let errorQry = this.errorQry(pName);
+                        let errorRes = await this.conn.execute<{ NAME: string, TYPE: string, LINE: number, POSITION: number, TEXT: string, ATTRIBUTE: string }>(errorQry);
+                        let errorRows = errorRes.rows;
+                        if (errorRows && errorRows.length !== 0) {
+                            final.output = errorRows.map(p => "Error: " + p.TEXT + " (Line: " + p.LINE + " Column: " + p.POSITION + ")") ?? [];
+                            final.errorOffset = new Position();
+                            final.errorOffset.line = errorRows[0].LINE;
+                            final.errorOffset.col = errorRows[0].POSITION - 1;
                         }
-                    } catch (ex) {
-                        final.output.push("Couldn't get error message: " + ex.toString());
+                        break;
                     }
                 }
+            } catch (ex) {
+                final.output.push("Couldn't get error message: " + ex.toString());
             }
         } catch (ex) {
             final.output = [ex.toString()];

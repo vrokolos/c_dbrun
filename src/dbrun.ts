@@ -49,6 +49,9 @@ export class DBRun {
             if (curLine.trim() === "") {
                 startLine = i + 1;
                 break;
+            } else if (curLine.indexOf("SQL>") > -1) {
+                startLine = i;
+                break;
             }
         }
         let endLine = tests.length;
@@ -57,11 +60,21 @@ export class DBRun {
             if (curLine.trim() === "") {
                 endLine = i;
                 break;
+            } else if (curLine.indexOf("SQL>") > -1) {
+                endLine = i + 1;
+                break;
             }
         }
         let query = "";
         for (let q = startLine; q < endLine; q++) {
-            query = query + tests[q] + eol;
+            let theLine = tests[q];
+            query = query + theLine + eol;
+        }
+        if (query.indexOf("SQL>") > -1) {
+            let mtches = matchAll(query, /SQL\>(.*?)\<\//sg);
+            for (let match of mtches) {
+                query = match[1];
+            }
         }
         this.subqueryStart = startLine;
         return query;

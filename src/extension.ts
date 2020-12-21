@@ -96,11 +96,12 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 }
 
 async function showText(title: string, output: string) {
-	let textdoc = await vscode.workspace.openTextDocument(vscode.Uri.parse(`untitled:${title}`));
+	let uri = vscode.Uri.parse(`untitled:${title}`);
+	let textdoc = await vscode.workspace.openTextDocument(uri);
 	if (title.endsWith("txt")) {
 		vscode.languages.setTextDocumentLanguage(textdoc, "dbrun");
 	}
-	let textshow = await vscode.window.showTextDocument(textdoc, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
+	let textshow = await vscode.window.showTextDocument(textdoc, {  preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
 	let firstLine = textshow.document.lineAt(0);
 	let lastLine = textshow.document.lineAt(textshow.document.lineCount - 1);
 	let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
