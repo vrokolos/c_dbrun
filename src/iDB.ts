@@ -2,6 +2,7 @@ import { Position } from "./dbrun";
 
 export interface Executor {
     exec(opts: ExecIn): Promise<ExecOut>;
+    connect(conString: string): void;
     getObjects(connectionString: string): Promise<{ name: string, type: string }[]>;
 }
 

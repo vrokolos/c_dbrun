@@ -80,6 +80,10 @@ export class DBRun {
         return query;
     }
 
+    public connect(conString: string) {
+        this.runner.connect(conString);
+    }
+
     FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[], paramsNeeded: string[] } {
         if (ccol !== 0) {
             let wrd = this.GetCurrentWord(file2, eol, cline, ccol);
@@ -118,15 +122,15 @@ export class DBRun {
         }
         
         let needed :string[] = [];
-        let neededPatt = /[^-](\:\w+)/gi;
+        /*let neededPatt = /[^-](\:\w+)/gi;
         let resultNeeded = matchAll(file2, neededPatt);
         for (let res of resultNeeded) {
-            if (['MM', 'YYYY', 'HH', 'MI', 'SS', 'HH24'].indexOf(res[1]) === -1) {
+            if ([':00', ':MM', ':YYYY', ':MI', ':SS', ':='].indexOf(res[1].toUpperCase()) === -1) {
                 if (!params.some(p => p.name.toUpperCase() === res[1].toUpperCase())) {
                     needed.push(res[1]);
                 }
             }
-        }
+        }*/
         return { query: file2res, params: params, paramsNeeded: needed };
     }
 

@@ -30,30 +30,34 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
         return res.data.map(p => ({ name: p.OBJECT_NAME, type: p.OBJECT_TYPE }));
     }
 
+    public async connect(constring: string) {
+        oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+        oracledb.fetchAsString = [oracledb.CLOB, oracledb.DATE];
+
+        let spl = constring.split("@");
+        let usrpas = spl[0];
+        let conStr = spl[1];
+        let conUser = usrpas.split("/")[0];
+        let conPass = usrpas.split("/")[1];
+        this.conn = await oracledb.getConnection({ connectString: conStr, user: conUser, password: conPass });
+        await this.conn.execute(this.dbmsQry);
+        await this.conn.execute(`ALTER SESSION SET NLS_DATE_FORMAT='dd/mm/yyyy HH24:MI:SS'`);
+    }
+
     public async exec(opts: ExecIn): Promise<ExecOut> {
         let final: ExecOut = new ExecOut();
 
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
-                oracledb.fetchAsString = [oracledb.CLOB, oracledb.DATE];
-
-                let spl = opts.connectionString.split("@");
-                let usrpas = spl[0];
-                let conStr = spl[1];
-                let conUser = usrpas.split("/")[0];
-                let conPass = usrpas.split("/")[1];
-                this.conn = await oracledb.getConnection({ connectString: conStr, user: conUser, password: conPass });
-                await this.conn.execute(this.dbmsQry);
-                await this.conn.execute(`ALTER SESSION SET NLS_DATE_FORMAT='dd/mm/yyyy HH24:MI:SS'`);
+                this.connect(opts.connectionString);
             }
 
             let query = opts.query;
 
             if (opts.isDDL) {
                 let ddlQuery = this.qryDDL(opts.query);
-                let ddlResults = await this.conn.execute<{ FILENAME: string, OTYPE: string, DDL: string }>(ddlQuery);
+                let ddlResults = await this.conn?.execute<{ FILENAME: string, OTYPE: string, DDL: string }>(ddlQuery);
                 if (ddlResults?.rows) {
                     let ddls: any[] = ddlResults?.rows;
                     for (let ddl of ddls) {
@@ -79,18 +83,18 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     params[p.name] = obj;
                 }
                 let results = await this.conn?.execute<any>(query, params, { resultSet: true });
-                if (results.metaData) {
+                if (results?.metaData) {
                     for (let ddl of Object.keys(final.ddlFiles)) {
                         let newlines = ["/* " + results.metaData.map(p => p.name).join(", ") + " */",
                         "/* " + results.metaData.map(p => "A." + p.name).join(", ") + " */"];
                         final.ddlFiles[ddl] = newlines.concat(final.ddlFiles[ddl]);
                     }
                 }
-                if (results.resultSet) {
+                if (results?.resultSet) {
                     final.data = await results.resultSet.getRows(opts.rowLimit);
                     final.dataCount = final.data.length + "/";
                     try {
-                        let countResult = await this.conn.execute<{ CNT: string }>("Select count(*) as CNT from (" + query + ")", params);
+                        let countResult = await this.conn?.execute<{ CNT: string }>("Select count(*) as CNT from (" + query + ")", params);
                         final.dataCount += countResult?.rows?.[0].CNT ?? "??";
                     } catch {
                         final.dataCount += "??";
@@ -108,8 +112,8 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     for (let match of result) {
                         let pName = match[1].trim();
                         let errorQry = this.errorQry(pName);
-                        let errorRes = await this.conn.execute<{ NAME: string, TYPE: string, LINE: number, POSITION: number, TEXT: string, ATTRIBUTE: string }>(errorQry);
-                        let errorRows = errorRes.rows;
+                        let errorRes = await this.conn?.execute<{ NAME: string, TYPE: string, LINE: number, POSITION: number, TEXT: string, ATTRIBUTE: string }>(errorQry);
+                        let errorRows = errorRes?.rows;
                         if (errorRows && errorRows.length !== 0) {
                             final.output = errorRows.map(p => "Error: " + p.TEXT + " (Line: " + p.LINE + " Column: " + p.POSITION + ")") ?? [];
                             final.errorOffset = new Position();

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { DBRun, DbRunOptions } from "./dbrun";
 import { SqlAutoComplete } from "./autocomplete";
+import { connect } from 'http2';
 
 let db = new DBRun();
 
@@ -11,6 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
 		'dbrun.currentQuery': () => go(_outputChannel, { kind: 1 }),
 		'dbrun.describeObject': () => go(_outputChannel, { kind: 2 }),
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
+		'dbrun.connect': () => dbConnect(),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
 		'dbrun.run': (opt: ExtOptions) => go(_outputChannel, opt)
 	};
@@ -19,6 +21,12 @@ export function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(vscode.commands.registerCommand(command, commands[command]));
 	}
 	context.subscriptions.push(vscode.languages.registerCompletionItemProvider("sql", new SqlAutoComplete(db, vscode.workspace.getConfiguration('dbrun')?.get<string>('connection') ?? "")));
+}
+
+function dbConnect() {
+	let conf = vscode.workspace.getConfiguration('dbrun');
+	let con = conf.get<string>('connection') ?? "";
+	db.connect(con);
 }
 
 function changeLogLang() {
