@@ -1,0 +1,112 @@
+{
+    "Show current sessions": {
+        "prefix": "ora.sessions",
+        "body": [
+            "select a.spid, b.status, b.sid, b.serial# as serial, b.machine, b.osuser, b.program, b.action,",
+            "'alter system kill session ' || '''' || b.SID || ', ' || b.SERIAL# || '''' || ' immediate;' KILL_SQL",
+            "from v\\$session b, v\\$process a",
+            "where b.paddr = a.addr",
+            "and type = 'USER'",
+            "and b.username = sys_context('userenv', 'current_schema')",
+            "order by status"
+        ]
+    },
+    "Show current jobs": {
+        "prefix": "ora.jobs",
+        "body": [
+            "SELECT /*+ RULE */ D.JOB, V.SID, V.SERIAL#, LOG_USER USERNAME, WHAT,",
+            "DECODE(TRUNC(SYSDATE - LOGON_TIME), 0, NULL,",
+            "TRUNC(SYSDATE - LOGON_TIME) || ' Days' || ' + ') ||",
+            "TO_CHAR(TO_DATE(TRUNC(MOD(SYSDATE-LOGON_TIME,1) * 86400), 'SSSSS'), 'HH24:MI:SS') RUNNING,",
+            "D.FAILURES, 'BEGIN DBMS_JOB.BROKEN(JOB,TRUE); alter system kill session ' || '''' || V.SID || ', ' || V.SERIAL# || '''' || ' immediate; END;' KILL_SQL",
+            "FROM DBA_JOBS_RUNNING D, V\\$SESSION V, USER_JOBS J",
+            "WHERE V.SID = D.SID",
+            "AND D.JOB = J.JOB"
+        ]
+    },
+    "Show table sizes": {
+        "prefix": "ora.sizes",
+        "body": [
+            "SELECT segment_name, tablespace_name, sum(bytes/1024/1024) MB",
+            "FROM dba_extents",
+            "WHERE OWNER = sys_context('userenv', 'current_schema')",
+            "AND SEGMENT_TYPE = 'TABLE'",
+            "group by segment_name, tablespace_name",
+            "order by MB desc"
+        ]
+    },
+    "Show synonyms": {
+        "prefix": "ora.synonyms",
+        "body": [
+            "select * ",
+            "from all_synonyms",
+            "where table_owner = sys_context('userenv', 'current_schema')",
+            "OR owner = sys_context('userenv', 'current_schema')"
+        ]
+    },
+    "Describe object": {
+        "prefix": "ora.describe",
+        "body": [
+            "--:theobject='$0'",
+            "select to_clob('/* ' || OBJECT_NAME || '        TYPE: ' || object_type || '          LAST DDL: ' || to_char(last_ddl_time, 'dd/mm/yyyy hh24:mi') || ' */') from user_objects where OBJECT_NAME = :theobject",
+            "union all select '/* ' || replace(wm_concat(column_name), ',', ', ') || ' */' as DDL from cols where table_name = :theobject",
+            "union all select '/* ' || replace(wm_concat('a.' || column_name), ',', ', ') || ' */' from cols where table_name = :theobject",
+            "union all select dbms_metadata.GET_DDL(",
+            "   decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || ';' || CHR(13) || '/' as DDL",
+            "   from user_objects",
+            "   WHERE OBJECT_NAME = :theobject",
+            "union all SELECT dbms_metadata.GET_DDL('INDEX', a.INDEX_NAME)  || ';' || CHR(13) || '/' AS DDL FROM user_indexes a WHERE table_name = :theobject",
+            "union all select dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';' || CHR(13) || '/' FROM user_triggers a WHERE table_name = :theobject"
+        ]
+    },
+    "Show tables": {
+        "prefix": "ora.tables",
+        "body": [
+            "select b.table_name, num_rows, wm_concat(COLUMN_NAME) as cols",
+            "  from cols a, user_tables b",
+            " where b.table_name like '$0%'",
+            "   and b.table_name = a.table_name",
+            " group by b.table_name, num_rows",
+            " order by b.table_name"
+        ]
+    },
+    "Show views": {
+        "prefix": "ora.views",
+        "body": [
+            "select b.view_name, (select status from user_objects where object_name = b.view_name) as status, wm_concat(COLUMN_NAME) as cols",
+            "  from cols a, user_views b",
+            " where b.view_name like '$0%'",
+            "   and b.view_name = a.table_name",
+            " group by b.view_name",
+            " order by b.view_name"
+        ]
+    },
+    "Show functions, procedures, packages": {
+        "prefix": "ora.procs",
+        "body": [
+            "select object_name, OBJECT_TYPE, STATUS",
+            "  from user_objects",
+            " where object_name like '$0%'",
+            "   and object_Type in ('FUNCTION', 'PROCEDURE', 'PACKAGE')",
+            "  order by object_name"
+        ]
+    },
+    "Invalid objects": {
+        "prefix": "ora.invalid",
+        "body": ["select object_name, OBJECT_TYPE, STATUS from user_objects where object_name like '$0%' and status = 'INVALID' order by object_name"]
+    },
+    "Errors": {
+        "prefix": "ora.errors",
+        "body": ["select * from user_errors order by name, sequence"]
+    },
+    "Create Table": {
+        "prefix": "ora.create.table",
+        "body": [
+            "CREATE TABLE $0 (",
+            "   ID NUMBER(10,0) PRIMARY KEY,",
+            "   ",
+            ")"
+        ]
+    }
+
+}

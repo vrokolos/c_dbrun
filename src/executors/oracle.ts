@@ -95,11 +95,12 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     } catch {
                         final.dataCount += "??";
                     }
+                } else {
+                    rowsAffected = results?.rowsAffected || 0;
+                    final.dataCount = rowsAffected?.toString() ?? "";
                 }
-                rowsAffected = results?.rowsAffected || 0;
             }
            
-            final.dataCount = rowsAffected?.toString() ?? "";
             try {
                 if (rowsAffected === 0) {
                     let regx = /CREATE\s.*?\s\"?(\w*?)\"?\s(?:IS|AS)/gi;
