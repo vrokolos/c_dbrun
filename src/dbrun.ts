@@ -80,7 +80,7 @@ export class DBRun {
         return query;
     }
 
-    FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[] } {
+    FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[], paramsNeeded: string[] } {
         if (ccol !== 0) {
             let wrd = this.GetCurrentWord(file2, eol, cline, ccol);
             wrd = wrd.toUpperCase();
@@ -116,7 +116,18 @@ export class DBRun {
                 file2res = file2res.replace(reg, pValue);
             }
         }
-        return { query: file2res, params: params };
+        
+        let needed :string[] = [];
+        let neededPatt = /[^-](\:\w+)/gi;
+        let resultNeeded = matchAll(file2, neededPatt);
+        for (let res of resultNeeded) {
+            if (['MM', 'YYYY', 'HH', 'MI', 'SS', 'HH24'].indexOf(res[1]) === -1) {
+                if (!params.some(p => p.name.toUpperCase() === res[1].toUpperCase())) {
+                    needed.push(res[1]);
+                }
+            }
+        }
+        return { query: file2res, params: params, paramsNeeded: needed };
     }
 
     log(data: any) {
@@ -196,6 +207,8 @@ export class DBRun {
 
         output.files = rr.ddlFiles;
         output.output = this.output.join(options.eol);
+        output.newParams = qr.paramsNeeded;
+        output.queryStartLine = this.subqueryStart;
         return output;
     }
 
@@ -236,6 +249,9 @@ export class DbRunOutput {
     errorPosition?: Position;
     output: string = "";
     files: { [filename: string]: string[] } = {};
+    
+    newParams: string[] = [];
+    queryStartLine = 0;
 }
 
 export class Position {

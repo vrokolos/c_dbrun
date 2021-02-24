@@ -78,6 +78,14 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 			editor.selection = new vscode.Selection(newPosition, newPosition);
 			editor.revealRange(new vscode.Range(newPosition, newPosition));
 		}
+		
+		if (output.newParams.length > 0) {
+			editor.edit(builder => {
+				for (let par of output.newParams) {
+					builder.insert(new vscode.Position(output.queryStartLine, 0), '--' + par + '=null' + doptions.eol);
+				}
+			});
+		}
 
 		for (let ddl of Object.keys(output.files)) {
 			await showText(ddl + ".sql", output.files[ddl].join(doptions.eol));
