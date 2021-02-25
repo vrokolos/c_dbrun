@@ -122,15 +122,16 @@ export class DBRun {
         }
         
         let needed :string[] = [];
-        /*let neededPatt = /[^-](\:\w+)/gi;
-        let resultNeeded = matchAll(file2, neededPatt);
+
+        let neededPatt = /[^-](\:\w+)/gi;
+        let resultNeeded = matchAll(file2.replace(/'.*?'/gsm, ''), neededPatt);
         for (let res of resultNeeded) {
-            if ([':00', ':MM', ':YYYY', ':MI', ':SS', ':='].indexOf(res[1].toUpperCase()) === -1) {
+            if ([':='].indexOf(res[1].toUpperCase()) === -1) {
                 if (!params.some(p => p.name.toUpperCase() === res[1].toUpperCase())) {
                     needed.push(res[1]);
                 }
             }
-        }*/
+        }
         return { query: file2res, params: params, paramsNeeded: needed };
     }
 

@@ -12,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
 		'dbrun.currentQuery': () => go(_outputChannel, { kind: 1 }),
 		'dbrun.describeObject': () => go(_outputChannel, { kind: 2 }),
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
-		'dbrun.connect': () => dbConnect(),
+		'dbrun.reconnect': () => dbConnect(),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
 		'dbrun.run': (opt: ExtOptions) => go(_outputChannel, opt)
 	};

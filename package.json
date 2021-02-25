@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "publisher": "iosifak",
     "repository": {
         "url": "https://github.com/vrokolos/c_dbrun"
@@ -34,6 +34,10 @@
             {
                 "command": "dbrun.currentQuery",
                 "title": "dbrun: Execute the current Querry"
+            },
+            {
+                "command": "dbrun.reconnect",
+                "title": "dbrun: Reconnect"
             },
             {
                 "command": "dbrun.describeObject",
