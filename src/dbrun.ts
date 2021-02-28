@@ -120,15 +120,17 @@ export class DBRun {
                 file2res = file2res.replace(reg, pValue);
             }
         }
-        
-        let needed :string[] = [];
+
+        let needed: string[] = [];
 
         let neededPatt = /[^-](\:\w+)/gi;
         let resultNeeded = matchAll(file2.replace(/'.*?'/gsm, ''), neededPatt);
         for (let res of resultNeeded) {
             if ([':='].indexOf(res[1].toUpperCase()) === -1) {
                 if (!params.some(p => p.name.toUpperCase() === res[1].toUpperCase())) {
-                    needed.push(res[1]);
+                    if (needed.indexOf(res[1].toUpperCase()) === -1) {
+                        needed.push(res[1].toUpperCase());
+                    }
                 }
             }
         }
@@ -174,7 +176,7 @@ export class DBRun {
         let rr = cnter ? "rows: [" + cnter + "]        " : "";
         this.extraLog(header + rr + "time: " + milliSec + " ms");
     }
-    
+
     async getObjects(conString: string): Promise<any[]> {
         let res = await this.runner.getObjects(conString);
         return res;
@@ -254,7 +256,7 @@ export class DbRunOutput {
     errorPosition?: Position;
     output: string = "";
     files: { [filename: string]: string[] } = {};
-    
+
     newParams: string[] = [];
     queryStartLine = 0;
 }
