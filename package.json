@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "publisher": "iosifak",
     "repository": {
         "url": "https://github.com/vrokolos/c_dbrun"
@@ -48,6 +48,14 @@
                 "title": "dbrun: Execute the current Query in a new window"
             },
             {
+                "command": "dbrun.currentQueryNewWindowInsert",
+                "title": "dbrun: Create Insert statements for the current Query"
+            },
+            {
+                "command": "dbrun.currentQueryNewWindowCSV",
+                "title": "dbrun: Create CSV file for the current Query"
+            },
+            {
                 "command": "dbrun.run",
                 "title": "Execute SQL.\n[kind] 0: Whole file 1: Current Querry 2: Describe Object\n[newwindow] false: Use Output Panel true: Use new Editor"
             }
@@ -58,7 +66,7 @@
                 "dbrun.connection": {
                     "type": "string",
                     "default": false,
-                    "description": "Connection to be used. Format: user/password@host:port/database"
+                    "description": "Connection to be used. Oracle Format: user/password@host:port/database, Postgres Format: postgres://user:password@host:port/database"
                 },
                 "dbrun.rowLimit": {
                     "type": "integer",

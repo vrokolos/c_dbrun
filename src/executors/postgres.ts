@@ -106,10 +106,10 @@ select table_name, table_type from information_schema.tables where table_catalog
                     if (dateFields.length > 0 || dateTimeFields.length > 0) {
                         for (let row of final.data) {
                             for (let field of dateFields) {
-                                row[field.name] = row[field.name].toLocaleDateString("el-GR");
+                                row[field.name] = row[field.name].toISOString().substr(0,10);
                             }
                             for (let field of dateTimeFields) {
-                                row[field.name] = row[field.name].toLocaleString("el-GR");
+                                row[field.name] = row[field.name].toISOString().replace('T', ' ').replace('Z', '');
                             }
                         }
                     }

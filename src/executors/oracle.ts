@@ -41,7 +41,7 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
         let conPass = usrpas.split("/")[1];
         this.conn = await oracledb.getConnection({ connectString: conStr, user: conUser, password: conPass });
         await this.conn.execute(this.dbmsQry);
-        await this.conn.execute(`ALTER SESSION SET NLS_DATE_FORMAT='dd/mm/yyyy HH24:MI:SS'`);
+        await this.conn.execute(`ALTER SESSION SET NLS_DATE_FORMAT='yyyy-mm-dd HH24:MI:SS'`);
     }
 
     public async exec(opts: ExecIn): Promise<ExecOut> {

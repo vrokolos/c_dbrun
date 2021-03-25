@@ -48,7 +48,7 @@
         "prefix": "ora.describe",
         "body": [
             "--:theobject='$0'",
-            "select to_clob('/* ' || OBJECT_NAME || '        TYPE: ' || object_type || '          LAST DDL: ' || to_char(last_ddl_time, 'dd/mm/yyyy hh24:mi') || ' */') from user_objects where OBJECT_NAME = :theobject",
+            "select to_clob('/* ' || OBJECT_NAME || '        TYPE: ' || object_type || '          LAST DDL: ' || to_char(last_ddl_time, 'yyyy-mm-dd hh24:mi') || ' */') from user_objects where OBJECT_NAME = :theobject",
             "union all select '/* ' || replace(wm_concat(column_name), ',', ', ') || ' */' as DDL from cols where table_name = :theobject",
             "union all select '/* ' || replace(wm_concat('a.' || column_name), ',', ', ') || ' */' from cols where table_name = :theobject",
             "union all select dbms_metadata.GET_DDL(",

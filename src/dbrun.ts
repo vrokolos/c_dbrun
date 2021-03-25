@@ -150,7 +150,25 @@ export class DBRun {
 
     extraLog(data: any) { /* */ }
 
-    private show(js: object[], format: string = "text"): string {
+    private formatValue(val: any): string {
+        if (val === null) {
+            return 'null';
+        } else if (val === true) {
+            return "true";
+        } else if (val === false) {
+            return "false";
+        } else if (typeof val === 'number') {
+            return val.toString();
+        } else if (val instanceof Date) {
+            let theDate = val.toLocaleString('el-GR'); 
+            return `TO_DATE('${theDate}', 'yyyy-mm-dd HH24:MI:SS')`;
+        } else if (typeof val === 'string' && val.trim().length >= 8 && val.trim().length <= 10  && !isNaN(new Date(val) as any)) {
+            return `TO_DATE('${val}', 'yyyy-mm-dd')`;
+        }
+        return "'" + val + "'";
+    }
+
+    private show(js: {[name: string]: any}[], format: string = "text"): string {
         let output = "";
         if (format === "text") {
             let headCols = Object.keys(js[0]);
@@ -170,6 +188,8 @@ export class DBRun {
                 table.push(Object.values(j));
             }
             output = table.toString();
+        } else if (format === "insert") {
+            output = js.map(row => `INSERT INTO THETABLE (${Object.keys(row).join(', ')}) VALUES (${Object.keys(row).map(p => this.formatValue(row[p])).join(", ")});`).join('\n');
         } else {
             const csvExporter = new ExportToCsv({ fieldSeparator: ',', quoteStrings: '"', decimalSeparator: '.', showLabels: true, useKeysAsHeaders: true });
             output = csvExporter.generateCsv(js, true);
@@ -269,7 +289,7 @@ export class DbRunOptions {
 
 export class DbRunOutput {
     errorPosition?: Position;
-    output: string = "";
+     output: string = "";
     files: { [filename: string]: string[] } = {};
 
     newParams: string[] = [];

@@ -13,6 +13,8 @@ export function activate(context: vscode.ExtensionContext) {
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
 		'dbrun.reconnect': () => dbConnect(),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
+		'dbrun.currentQueryNewWindowInsert': () => go(_outputChannel, {kind: 1, newwindow: true, format: 'insert'}),
+		'dbrun.currentQueryNewWindowCSV': () => go(_outputChannel, {kind: 1, newwindow: true, format: 'csv'}),		
 		'dbrun.run': (opt: ExtOptions) => go(_outputChannel, opt)
 	};
 
@@ -100,7 +102,15 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 
 		if (output.output !== "") {
 			if (nw) {
-				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + (doptions.format === "text" ? ".txt" : ".csv");
+				let ext = '.txt';
+				if (doptions.format === 'text') {
+					ext = '.txt';
+				} else if (doptions.format === 'csv') {
+					ext = '.csv';
+				} else if (doptions.format === 'insert') {
+					ext = '.sql';
+				}
+				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + ext;
 				await showText(filename, output.output);
 			} else {
 				_outputChannel.appendLine(output.output);
