@@ -2,6 +2,7 @@ import { performance } from "perf_hooks";
 import Table from 'cli-table3';
 import { matchAll } from "./utils";
 import { Oracle } from "./executors/oracle";
+import { Postgres } from "./executors/postgres";
 import { ExportToCsv } from 'export-to-csv';
 import { Executor, ExecParam } from "./iDB";
 
@@ -10,7 +11,7 @@ export class DBRun {
 
     private output: string[] = [];
 
-    public runner: Executor = new Oracle();
+    public runner?: Executor;
 
     GetCurrentWord(text: string, eol: string, cline: number = 0, ccol: number = 0): string {
         let tests = text.split(eol);
@@ -80,8 +81,13 @@ export class DBRun {
         return query;
     }
 
-    public connect(conString: string) {
-        this.runner.connect(conString);
+    public async connect(conString: string) {
+        if (conString.startsWith('postgres://')) {
+            this.runner = new Postgres();
+        } else {
+            this.runner = new Oracle();
+        }
+        await this.runner.connect(conString);
     }
 
     FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[], paramsNeeded: string[] } {
@@ -177,23 +183,32 @@ export class DBRun {
         this.extraLog(header + rr + "time: " + milliSec + " ms");
     }
 
-    async getObjects(conString: string): Promise<any[]> {
-        let res = await this.runner.getObjects(conString);
-        return res;
+    async getObjects(conString: string): Promise<{ name: string, type: string }[]> {
+        let cn = conString;
+        await this.connect(conString);
+        let res = await this.runner?.getObjects(cn);
+        return res ?? [];
     }
 
     async go(options: DbRunOptions): Promise<DbRunOutput> {
         this.output = [];
         let output = new DbRunOutput();
 
-        if (!options.connectionString) {
+        let conString = options.connectionString;
+        if (!conString) {
             console.log("no connection string defined");
             throw new Error("dbrun => No connection string defined. Set one in settings");
         }
 
         let qr = this.FetchQuery(options.fileText, options.eol, options.currentLine, options.currentCol, false);
         let stopwatch = performance.now();
-        let rr = await this.runner.exec({ connectionString: options.connectionString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
+        if (!this.runner) {
+            this.connect(conString);
+        }
+        if (!this.runner) {
+            return output;
+        }        
+        let rr = await this.runner.exec({ connectionString: conString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
         let ms = Math.round(performance.now() - stopwatch);
 
         if (rr.output) {

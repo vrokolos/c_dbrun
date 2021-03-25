@@ -6,7 +6,7 @@ Used in vscode settings:
 
 KEY | DESCRIPTION
 -- | --
-dbrun.connection | Connection string to be used in this format: **username/password@host:port/servicename**
+dbrun.connection | Connection string to be used in this format: oracle: **username/password@host:port/servicename** postgres: **postgres://username:password@host:port/databasename**
 dbrun.rowLimit | Number of records to fetch when executing queries that return resultsets. **Default: 10**
 
 Note that the rowLimit option is ignored when you open the results in a new window and the limit there is a hardcoded 99000
@@ -87,7 +87,7 @@ Example:
 ``` sql
 --:THEID=3
 --:THEDATE=01/01/1900
---:THESTRING=HELLO
+--:THESTRING='HELLO'
 SELECT :THEDATE AS DATEVAL, 
        :THESTRING AS STRINGVAL, 
        :THEID AS NUMBERVAL 
@@ -99,4 +99,6 @@ dbrun tries to automatically detect the type of the parameter using sophisticate
 ## Transactions
 Everything is run under a single transaction and you should run "commit" to commit the changes
 
-**AUTOCOMMIT IS OFF**
+ORACLE: **AUTOCOMMIT IS OFF**
+
+POSTGRES: **AUTOCOMMIT IS ON**

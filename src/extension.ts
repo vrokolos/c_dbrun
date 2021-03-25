@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { DBRun, DbRunOptions } from "./dbrun";
 import { SqlAutoComplete } from "./autocomplete";
-import { connect } from 'http2';
 
 let db = new DBRun();
 
@@ -81,12 +80,6 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 		doptions.eol = editor.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
 
 		let output = await db.go(doptions);
-		if (output.errorPosition) {
-			let newPosition = new vscode.Position(output.errorPosition.line - 1, output.errorPosition.col);
-			editor.selection = new vscode.Selection(newPosition, newPosition);
-			editor.revealRange(new vscode.Range(newPosition, newPosition));
-		}
-		
 		if (output.newParams.length > 0) {
 			editor.edit(builder => {
 				for (let par of output.newParams) {
@@ -94,6 +87,12 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 				}
 			});
 		}
+		if (output.errorPosition) {
+			let newPosition = new vscode.Position(output.errorPosition.line - 1, output.errorPosition.col);
+			editor.selection = new vscode.Selection(newPosition, newPosition);
+			editor.revealRange(new vscode.Range(newPosition, newPosition));
+		}
+
 
 		for (let ddl of Object.keys(output.files)) {
 			await showText(ddl + ".sql", output.files[ddl].join(doptions.eol));
@@ -117,7 +116,7 @@ async function showText(title: string, output: string) {
 	if (title.endsWith("txt")) {
 		vscode.languages.setTextDocumentLanguage(textdoc, "dbrun");
 	}
-	let textshow = await vscode.window.showTextDocument(textdoc, {  preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
+	let textshow = await vscode.window.showTextDocument(textdoc, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside });
 	let firstLine = textshow.document.lineAt(0);
 	let lastLine = textshow.document.lineAt(textshow.document.lineCount - 1);
 	let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);

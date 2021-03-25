@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.2.2",
+    "version": "0.3.0",
     "publisher": "iosifak",
     "repository": {
         "url": "https://github.com/vrokolos/c_dbrun"
@@ -137,7 +137,9 @@
         "@types/mocha": "^7.0.2",
         "@types/node": "^13.11.0",
         "@types/oracledb": "^4.2.2",
+        "@types/pg": "^7.14.11",
         "@types/vscode": "^1.46.0",
+        "@types/yesql": "^4.1.0",
         "@typescript-eslint/eslint-plugin": "^2.26.0",
         "@typescript-eslint/parser": "^2.26.0",
         "eslint": "^6.8.0",
@@ -149,6 +151,9 @@
     "dependencies": {
         "cli-table3": "^0.6.0",
         "export-to-csv": "^0.2.1",
-        "oracledb": "^5.0.0"
+        "oracledb": "^5.0.0",
+        "pg": "^8.5.1",
+        "pg-cursor": "^2.5.2",
+        "yesql": "^5.0.0"
     }
 }
