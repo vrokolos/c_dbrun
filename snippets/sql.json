@@ -35,6 +35,15 @@
             "order by MB desc"
         ]
     },
+    "Postgres table sizes": {
+        "prefix": "pg.sizes",
+        "body": ["select table_name,",
+            "pg_size_pretty(pg_table_size(table_schema || '.' || table_name)) as size,",
+            "(select n_live_tup from pg_staT_user_tables s where s.relname = table_name) as rows",
+            "from information_schema.tables ",
+            "order by pg_table_size(table_schema || '.' || table_name) desc"
+        ]
+    },
     "Show synonyms": {
         "prefix": "ora.synonyms",
         "body": [

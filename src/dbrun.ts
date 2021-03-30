@@ -171,21 +171,31 @@ export class DBRun {
     private show(js: {[name: string]: any}[], format: string = "text"): string {
         let output = "";
         if (format === "text") {
-            let headCols = Object.keys(js[0]);
+            let headCols = Object.keys(js[0]).map(s => ({ 
+                head: s, 
+                type: typeof js.find(p => p[s] !== null)?.[s], 
+                maxDecimals: Math.min(Math.max(...js.map(p => typeof p[s] === 'number' ? (p[s].toString().split('.')[1]?.length ?? 0) : 0) ), 2)
+            }));
+
             var table = new Table({
                 chars: { 'top-mid': '', 'bottom-mid': '', "mid-mid": '', "middle": '' },
-                head: headCols,
+                head: headCols.map(s => s.head),
                 style: { head: [], border: [], compact: true },
                 wordWrap: false
             });
             for (let j of js) {
+                let row = [];
                 for (let col of headCols) {
-                    let k = j as any;
-                    if (k[col] && k[col].replace) {
-                        k[col] = k[col].replace(/\s00\:00\:00/g, "");
+                    if (j[col.head] && j[col.head].replace) {
+                        j[col.head] = j[col.head].replace(/\s00\:00\:00/g, "");
+                    }
+                    if (col.type === "number") {
+                        row.push({ content: j[col.head]?.toFixed(col.maxDecimals)?.toString(), hAlign: 'right'});
+                    } else {
+                        row.push(j[col.head]);
                     }
                 }
-                table.push(Object.values(j));
+                table.push(row);
             }
             output = table.toString();
         } else if (format === "insert") {

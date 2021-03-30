@@ -2,7 +2,7 @@
     "name": "dbrun",
     "displayName": "dbrun",
     "description": "Run SQL commands. Only oracle support currently. Early beta",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "publisher": "iosifak",
     "repository": {
         "url": "https://github.com/vrokolos/c_dbrun"

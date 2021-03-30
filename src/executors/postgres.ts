@@ -42,7 +42,7 @@ select table_name, table_type from information_schema.tables where table_catalog
     }
 
     public async connect(constring: string) {
-        this.conn = new Pool({ connectionString: constring });
+        //this.conn = new Pool({ connectionString: constring });
     }
 
     private readNext(cursor: any, cnt: number): Promise<QueryResult> {
@@ -55,7 +55,8 @@ select table_name, table_type from information_schema.tables where table_catalog
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                await this.connect(opts.connectionString);
+                this.conn = new Pool({ connectionString: opts.connectionString, query_timeout: 10000 });
+                //await this.connect(opts.connectionString);
             }
 
             let query = opts.query;
@@ -87,9 +88,9 @@ select table_name, table_type from information_schema.tables where table_catalog
                 }
 
                 let qr = pg(query)(params);
-                let client = await this.conn?.connect();
+                let client = await this.conn.connect();
 
-                let cursor = client?.query(new Cursor(qr.text, qr.values));
+                let cursor = client.query(new Cursor(qr.text, qr.values));
                 let results = await this.readNext(cursor, opts.rowLimit);
                 //let results = await this.conn?.query(qr);
 
