@@ -89,9 +89,13 @@ select table_name, table_type from information_schema.tables where table_catalog
 
                 let qr = pg(query)(params);
                 let client = await this.conn.connect();
-
-                let cursor = client.query(new Cursor(qr.text, qr.values));
-                let results = await this.readNext(cursor, opts.rowLimit);
+                let results = null;
+                try {
+                    let cursor = client.query(new Cursor(qr.text, qr.values));
+                    results = await this.readNext(cursor, opts.rowLimit);
+                } finally {
+                    client.release();
+                }
                 //let results = await this.conn?.query(qr);
 
                 if (results?.fields) {
