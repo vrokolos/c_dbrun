@@ -42,7 +42,7 @@ select table_name, table_type from information_schema.tables where table_catalog
     }
 
     public async connect(constring: string) {
-        //this.conn = new Pool({ connectionString: constring });
+        this.conn = new Pool({ connectionString: constring });
     }
 
     private readNext(cursor: any, cnt: number): Promise<QueryResult> {
@@ -55,7 +55,8 @@ select table_name, table_type from information_schema.tables where table_catalog
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                this.conn = new Pool({ connectionString: opts.connectionString, query_timeout: 10000 });
+                this.conn = new Pool(//{ host: '10.10.101.105', port: 5432, user: 'postgres', password: 'ct3am#' });
+                    { connectionString: opts.connectionString, query_timeout: 30000 });
                 //await this.connect(opts.connectionString);
             }
 
@@ -93,45 +94,45 @@ select table_name, table_type from information_schema.tables where table_catalog
                 try {
                     let cursor = client.query(new Cursor(qr.text, qr.values));
                     results = await this.readNext(cursor, opts.rowLimit);
-                } finally {
-                    client.release();
-                }
-                //let results = await this.conn?.query(qr);
+                    //let results = await this.conn?.query(qr);
 
-                if (results?.fields) {
-                    for (let ddl of Object.keys(final.ddlFiles)) {
-                        let newlines = ["/* " + results.fields.map(p => p.name).join(", ") + " */", "/* " + results.fields.map(p => "A." + p.name).join(", ") + " */"];
-                        final.ddlFiles[ddl] = newlines.concat(final.ddlFiles[ddl]);
+                    if (results?.fields) {
+                        for (let ddl of Object.keys(final.ddlFiles)) {
+                            let newlines = ["/* " + results.fields.map(p => p.name).join(", ") + " */", "/* " + results.fields.map(p => "A." + p.name).join(", ") + " */"];
+                            final.ddlFiles[ddl] = newlines.concat(final.ddlFiles[ddl]);
+                        }
                     }
-                }
-                if (results?.rows) {
-                    final.data = results?.rows;
-                    let dateFields = results.fields.filter(p => p.dataTypeID === 1082);
-                    let dateTimeFields = results.fields.filter(p => p.dataTypeID === 1184);
-                    if (dateFields.length > 0 || dateTimeFields.length > 0) {
-                        for (let row of final.data) {
-                            for (let field of dateFields) {
-                                if (row[field.name] !== null) {
-                                    row[field.name] = row[field.name].toISOString().substr(0, 10);
+                    if (results?.rows) {
+                        final.data = results?.rows;
+                        let dateFields = results.fields.filter(p => p.dataTypeID === 1082);
+                        let dateTimeFields = results.fields.filter(p => p.dataTypeID === 1184);
+                        if (dateFields.length > 0 || dateTimeFields.length > 0) {
+                            for (let row of final.data) {
+                                for (let field of dateFields) {
+                                    if (row[field.name] !== null) {
+                                        row[field.name] = row[field.name].toISOString().substr(0, 10);
+                                    }
                                 }
-                            }
-                            for (let field of dateTimeFields) {
-                                if (row[field.name] !== null) {
-                                    row[field.name] = row[field.name].toISOString().replace('T', ' ').replace('Z', '');
+                                for (let field of dateTimeFields) {
+                                    if (row[field.name] !== null) {
+                                        row[field.name] = row[field.name].toISOString().replace('T', ' ').replace('Z', '');
+                                    }
                                 }
                             }
                         }
+                        final.dataCount = results?.rows?.length + "/";
+                        try {
+                            let countResult = await client?.query<{ cnt: string }>("Select count(*) as CNT from (" + qr.text + ") a", qr.values);
+                            final.dataCount += countResult?.rows?.[0].cnt ?? "??";
+                        } catch {
+                            final.dataCount += "??";
+                        }
+                    } else {
+                        rowsAffected = results?.rowCount || 0;
+                        final.dataCount = rowsAffected?.toString() ?? "";
                     }
-                    final.dataCount = results?.rows?.length + "/";
-                    try {
-                        let countResult = await client?.query<{ cnt: string }>("Select count(*) as CNT from (" + qr.text + ") a", qr.values);
-                        final.dataCount += countResult?.rows?.[0].cnt ?? "??";
-                    } catch {
-                        final.dataCount += "??";
-                    }
-                } else {
-                    rowsAffected = results?.rowCount || 0;
-                    final.dataCount = rowsAffected?.toString() ?? "";
+                } finally {
+                    client.release();
                 }
             }
         } catch (ex) {

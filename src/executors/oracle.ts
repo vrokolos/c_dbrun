@@ -16,9 +16,9 @@ export class Oracle implements Executor {
     end;
 `;
     public qryDDL(wrd: string): string {
-        return `select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || CHR(13) as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
-union all SELECT null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('INDEX', a.INDEX_NAME)  || ';' || CHR(13) || '/' AS DDL FROM user_indexes a WHERE table_name = '${wrd}'
-union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';' || CHR(13) || '/' FROM user_triggers a WHERE table_name = '${wrd}'`;
+        return `select object_type as otype, '${wrd}' || decode(object_Type, 'PACKAGE', '_SPEC', '') as filename, dbms_metadata.GET_DDL(decode(object_type, 'PACKAGE', 'PACKAGE_SPEC', 'PACKAGE BODY', 'PACKAGE_BODY', object_type), object_name) || CHR(10) || CHR(13) as DDL from user_objects WHERE OBJECT_NAME = '${wrd}'
+union all SELECT null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('INDEX', a.INDEX_NAME)  || ';' || CHR(10)|| CHR(13) || '/' AS DDL FROM user_indexes a WHERE table_name = '${wrd}'
+union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRIGGER', a.TRIGGER_NAME) || ';'|| CHR(10) || CHR(13) || '/' FROM user_triggers a WHERE table_name = '${wrd}'`;
     }
 
     private errorQry(wrd: string): string {
@@ -50,7 +50,7 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                this.connect(opts.connectionString);
+                await this.connect(opts.connectionString);
             }
 
             let query = opts.query;
@@ -64,7 +64,12 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                         if (!final.ddlFiles.hasOwnProperty(ddl.FILENAME)) {
                             final.ddlFiles[ddl.FILENAME] = [];
                         }
-                        final.ddlFiles[ddl.FILENAME].push(ddl.DDL);
+                        let tddlspl: string[] = ddl.DDL.split('\n');
+                        if (tddlspl[0].trim() === '') {
+                            tddlspl = tddlspl.slice(1);
+                        }
+
+                        final.ddlFiles[ddl.FILENAME].push(tddlspl.join('\n'));
                     }
                     objectType = ddls.filter(p => p.OTYPE !== "" && p.OTYPE !== null)[0]?.OTYPE;
                 }
@@ -104,7 +109,7 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     final.dataCount = rowsAffected?.toString() ?? "";
                 }
             }
-           
+
             try {
                 if (rowsAffected === 0) {
                     let regx = /CREATE\s.*?\s\"?(\w*?)\"?\s(?:IS|AS)/gi;
@@ -124,11 +129,11 @@ union all select null as otype, '${wrd}' as filename, dbms_metadata.GET_DDL('TRI
                     }
                 }
             } catch (ex) {
-                final.output.push("Couldn't get error message: " + ex.toString());
+                final.output.push("Couldn't get error message: " + (<any>ex).toString());
             }
         } catch (ex) {
-            final.output = [ex.toString()];
-            final.errorOffset = ex.offset;
+            final.output = [(<any>ex).toString()];
+            final.errorOffset = (<any>ex).offset;
             console.log(ex);
         }
 

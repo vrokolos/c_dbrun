@@ -82,12 +82,16 @@ export class DBRun {
     }
 
     public async connect(conString: string) {
-        if (conString.startsWith('postgres://')) {
+        if (conString.startsWith('postgres')) {
             this.runner = new Postgres();
         } else {
             this.runner = new Oracle();
         }
-        await this.runner.connect(conString);
+        try {
+            await this.runner.connect(conString);
+        } catch (ex) {
+            this.extraLog(ex);
+        }
     }
 
     FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[], paramsNeeded: string[] } {
@@ -99,7 +103,10 @@ export class DBRun {
             file2 = this.GetCurrentQuery(file2, eol, cline);
         }
         let params: ExecParam[] = [];
-        let file2res = file2.split(eol).filter(p => p !== "").join(eol);
+        let file2res = file2;
+        if (ccol !== 0 || cline !== 0) {
+            file2res = file2res.split(eol).filter(p => p !== "").join(eol);
+        }
         let patt = /--(\:.*?)\s?=\s?(.*)/gi;
         let result = matchAll(file2, patt);
         for (let match of result) {
@@ -160,21 +167,21 @@ export class DBRun {
         } else if (typeof val === 'number') {
             return val.toString();
         } else if (val instanceof Date) {
-            let theDate = val.toLocaleString('el-GR'); 
+            let theDate = val.toLocaleString('el-GR');
             return `TO_DATE('${theDate}', 'yyyy-mm-dd HH24:MI:SS')`;
-        } else if (typeof val === 'string' && val.trim().length >= 8 && val.trim().length <= 10  && !isNaN(new Date(val) as any)) {
+        } else if (typeof val === 'string' && val.trim().length >= 8 && val.trim().length <= 10 && !isNaN(new Date(val) as any)) {
             return `TO_DATE('${val}', 'yyyy-mm-dd')`;
         }
         return "'" + val + "'";
     }
 
-    private show(js: {[name: string]: any}[], format: string = "text"): string {
+    private show(js: { [name: string]: any }[], format: string = "text"): string {
         let output = "";
         if (format === "text") {
-            let headCols = Object.keys(js[0]).map(s => ({ 
-                head: s, 
-                type: typeof js.find(p => p[s] !== null)?.[s], 
-                maxDecimals: Math.min(Math.max(...js.map(p => typeof p[s] === 'number' ? (p[s].toString().split('.')[1]?.length ?? 0) : 0) ), 2)
+            let headCols = Object.keys(js[0]).map(s => ({
+                head: s,
+                type: typeof js.find(p => p[s] !== null)?.[s],
+                maxDecimals: Math.min(Math.max(...js.map(p => typeof p[s] === 'number' ? (p[s].toString().split('.')[1]?.length ?? 0) : 0)), 2)
             }));
 
             var table = new Table({
@@ -190,7 +197,7 @@ export class DBRun {
                         j[col.head] = j[col.head].replace(/\s00\:00\:00/g, "");
                     }
                     if (col.type === "number") {
-                        row.push({ content: j[col.head]?.toFixed(col.maxDecimals)?.toString(), hAlign: 'right'});
+                        row.push({ content: j[col.head]?.toFixed(col.maxDecimals)?.toString(), hAlign: 'right' });
                     } else {
                         row.push(j[col.head]);
                     }
@@ -237,7 +244,7 @@ export class DBRun {
         }
         if (!this.runner) {
             return output;
-        }        
+        }
         let rr = await this.runner.exec({ connectionString: conString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
         let ms = Math.round(performance.now() - stopwatch);
 
@@ -299,7 +306,7 @@ export class DbRunOptions {
 
 export class DbRunOutput {
     errorPosition?: Position;
-     output: string = "";
+    output: string = "";
     files: { [filename: string]: string[] } = {};
 
     newParams: string[] = [];
