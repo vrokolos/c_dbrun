@@ -95,7 +95,15 @@ export class DBRun {
     }
 
     FetchQuery(file2: string, eol: string, cline: number = 0, ccol: number = 0, replaceParams = true): { query: string, params: ExecParam[], paramsNeeded: string[] } {
-        if (ccol !== 0) {
+        if (cline === -99) {
+            let regx = /CREATE\s+(?:OR\s+)?(?:REPLACE\s+)?(?:(?:VIEW)|(?:FUNCTION)|(?:PACKAGE)|(?:PACKAGE)|(?:PROCEDURE))\s+(?:BODY\s+)?\"?(\w*)\"?\s*(?:\s|\()/gmi;
+            let val = regx.exec(file2)?.[1];
+            if (val === undefined) {
+                throw new Error("Couldn't find current object name");
+            } else {
+                file2 = val;
+            }
+        } else if (ccol !== 0) {
             let wrd = this.GetCurrentWord(file2, eol, cline, ccol);
             wrd = wrd.toUpperCase();
             file2 = wrd;
@@ -245,7 +253,7 @@ export class DBRun {
         if (!this.runner) {
             return output;
         }
-        let rr = await this.runner.exec({ connectionString: conString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 });
+        let rr = await this.runner.exec({ connectionString: conString, query: qr.query, params: qr.params, rowLimit: options.rowLimit, isDDL: options.currentCol !== 0 || options.currentLine === -99 });
         let ms = Math.round(performance.now() - stopwatch);
 
         if (rr.output) {

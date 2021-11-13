@@ -2,70 +2,34 @@
   "name": "dbrun",
   "displayName": "dbrun",
   "description": "Run SQL commands. Only oracle support currently. Early beta",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "publisher": "iosifak",
-  "repository": {
-    "url": "https://github.com/vrokolos/c_dbrun"
-  },
-  "engines": {
-    "vscode": "^1.46.0"
-  },
-  "categories": [
-    "Other"
-  ],
+  "repository": { "url": "https://github.com/vrokolos/c_dbrun" },
+  "engines": { "vscode": "^1.46.0" },
+  "categories": [ "Other" ],
   "activationEvents": [
     "onCommand:dbrun.executeFile",
     "onCommand:dbrun.currentQuery",
     "onCommand:dbrun.describeObject",
+    "onCommand:dbrun.reloadObject",
     "onCommand:dbrun.currentQueryNewWindow",
     "onCommand:dbrun.run",
     "onLanguage:sql"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "snippets": [
-      {
-        "language": "sql",
-        "path": "./snippets/sql.json"
-      }
-    ],
+    "snippets": [ { "language": "sql", "path": "./snippets/sql.json" } ],
     "commands": [
-      {
-        "command": "dbrun.executeFile",
-        "title": "dbrun: Execute the current File"
-      },
-      {
-        "command": "dbrun.currentQuery",
-        "title": "dbrun: Execute the current Querry"
-      },
-      {
-        "command": "dbrun.reconnect",
-        "title": "dbrun: Reconnect"
-      },
-      { 
-        "command": "dbrun.chooseConnection",
-        "title": "dbrun: Choose Connection"
-      },
-      {
-        "command": "dbrun.describeObject",
-        "title": "dbrun: Describe current Object"
-      },
-      {
-        "command": "dbrun.currentQueryNewWindow",
-        "title": "dbrun: Execute the current Query in a new window"
-      },
-      {
-        "command": "dbrun.currentQueryNewWindowInsert",
-        "title": "dbrun: Create Insert statements for the current Query"
-      },
-      {
-        "command": "dbrun.currentQueryNewWindowCSV",
-        "title": "dbrun: Create CSV file for the current Query"
-      },
-      {
-        "command": "dbrun.run",
-        "title": "Execute SQL.\n[kind] 0: Whole file 1: Current Querry 2: Describe Object\n[newwindow] false: Use Output Panel true: Use new Editor"
-      }
+      { "command": "dbrun.executeFile", "title": "dbrun: Execute the current File"      },
+      { "command": "dbrun.currentQuery", "title": "dbrun: Execute the current Querry"      },
+      { "command": "dbrun.reconnect", "title": "dbrun: Reconnect"  },
+      { "command": "dbrun.chooseConnection", "title": "dbrun: Choose Connection"      },
+      { "command": "dbrun.describeObject", "title": "dbrun: Describe current Object"      },
+      { "command": "dbrun.reloadObject", "title": "dbrun: Reload current from DB" },
+      { "command": "dbrun.currentQueryNewWindow", "title": "dbrun: Execute the current Query in a new window"      },
+      { "command": "dbrun.currentQueryNewWindowInsert", "title": "dbrun: Create Insert statements for the current Query"      },
+      { "command": "dbrun.currentQueryNewWindowCSV", "title": "dbrun: Create CSV file for the current Query"      },
+      { "command": "dbrun.run", "title": "Execute SQL.\n[kind] 0: Whole file 1: Current Querry 2: Describe Object\n[newwindow] false: Use Output Panel true: Use new Editor"      }
     ],
     "configuration": {
       "title": "Connection Settings",
@@ -88,64 +52,20 @@
       }
     },
     "keybindings": [
-      {
-        "command": "dbrun.run",
-        "args": {
-          "kind": 1,
-          "newwindow": true
-        },
-        "key": "ctrl+shift+enter",
-        "mac": "cmd+shift+enter",
-        "when": "editorTextFocus && editorLangId == 'sql'"
-      },
-      {
-        "key": "f9",
-        "command": "dbrun.run",
-        "when": "editorTextFocus && editorLangId == 'sql'"
-      },
-      {
-        "key": "f4",
-        "command": "dbrun.run",
-        "args": {
-          "kind": 2
-        },
-        "when": "editorTextFocus && editorLangId == 'sql'"
-      },
-      {
-        "key": "ctrl+enter",
-        "mac": "cmd+enter",
-        "command": "dbrun.run",
-        "args": {
-          "kind": 1
-        },
-        "when": "editorTextFocus && editorLangId == 'sql'"
-      }
+      { "key": "ctrl+shift+enter", "command": "dbrun.run", "args": { "kind": 1, "newwindow": true }, "mac": "cmd+shift+enter", "when": "editorTextFocus && editorLangId == 'sql'" },
+      { "key": "f9", "command": "dbrun.run", "when": "editorTextFocus && editorLangId == 'sql'" }, 
+      { "key": "f4", "command": "dbrun.run", "args": { "kind": 2 }, "when": "editorTextFocus && editorLangId == 'sql'" }, 
+      { "key": "ctrl+enter", "mac": "cmd+enter", "command": "dbrun.run", "args": { "kind": 1 }, "when": "editorTextFocus && editorLangId == 'sql'"       }
     ],
     "languages": [
       {
         "id": "dbrun",
-        "extensions": [
-          ".log"
-        ],
-        "aliases": [
-          "dbrun"
-        ],
-        "mimetypes": [
-          "log",
-          "text/log",
-          "text/x-log",
-          "text/x-code-output",
-          "x-code-output"
-        ]
+        "extensions": [ ".log" ],
+        "aliases": [ "dbrun" ],
+        "mimetypes": [ "log", "text/log", "text/x-log", "text/x-code-output", "x-code-output" ]
       }
     ],
-    "grammars": [
-      {
-        "language": "dbrun",
-        "scopeName": "dbrun.log",
-        "path": "./dbrun.tmLanguage"
-      }
-    ]
+    "grammars": [ { "language": "dbrun", "scopeName": "dbrun.log", "path": "./dbrun.tmLanguage" } ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -22,6 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
 		'dbrun.chooseConnection': () => chooseConn(),
 		'dbrun.reconnect': () => dbConnect(),
+		'dbrun.reloadObject': () => go(_outputChannel, { kind: 3 }),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
 		'dbrun.currentQueryNewWindowInsert': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'insert' }),
 		'dbrun.currentQueryNewWindowCSV': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'csv' }),
@@ -92,6 +93,8 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 		} else if (kind === 2) {
 			lineNumber = editor.selection.active.line + 1;
 			colNumber = editor.selection.active.character + 1;
+		} else if (kind === 3) {
+			lineNumber = -99;
 		}
 
 		let conf = vscode.workspace.getConfiguration('dbrun');
@@ -124,9 +127,17 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 			editor.revealRange(new vscode.Range(newPosition, newPosition));
 		}
 
-
 		for (let ddl of Object.keys(output.files)) {
-			await showText(ddl + ".sql", output.files[ddl].join(doptions.eol));
+			if (kind === 3) {
+				let firstLine = editor.document.lineAt(0);
+				let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+				let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+				editor.edit(edit => edit.replace(textRange, output.files[ddl].join(doptions.eol)));
+				let newPosition = new vscode.Position(0, 0);
+				editor.selection = new vscode.Selection(newPosition, newPosition);
+			} else {
+				await newTab(ddl + ".sql", output.files[ddl].join(doptions.eol));
+			}
 		}
 
 		if (output.output !== "") {
@@ -140,7 +151,7 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 					ext = '.sql';
 				}
 				let filename = "qr" + (Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 10)) + ext;
-				await showText(filename, output.output);
+				await newTab(filename, output.output);
 			} else {
 				_outputChannel.appendLine(output.output);
 			}
@@ -149,7 +160,7 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 	}
 }
 
-async function showText(title: string, output: string) {
+async function newTab(title: string, output: string) {
 	let uri = vscode.Uri.parse(`untitled:${title}`);
 	let textdoc = await vscode.workspace.openTextDocument(uri);
 	if (title.endsWith("txt")) {
