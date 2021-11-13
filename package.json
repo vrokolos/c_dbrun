@@ -2,7 +2,7 @@
   "name": "dbrun",
   "displayName": "dbrun",
   "description": "Run SQL commands. Only oracle support currently. Early beta",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "publisher": "iosifak",
   "repository": {
     "url": "https://github.com/vrokolos/c_dbrun"
@@ -42,6 +42,10 @@
         "command": "dbrun.reconnect",
         "title": "dbrun: Reconnect"
       },
+      { 
+        "command": "dbrun.chooseConnection",
+        "title": "dbrun: Choose Connection"
+      },
       {
         "command": "dbrun.describeObject",
         "title": "dbrun: Describe current Object"
@@ -70,6 +74,11 @@
           "type": "string",
           "default": false,
           "description": "Connection to be used. Oracle Format: user/password@host:port/database, Postgres Format: postgres://user:password@host:port/database"
+        },
+        "dbrun.connections": {
+          "type": "object",
+          "default": false,
+          "description": "Connections to be used. Oracle Format: user/password@host:port/database, Postgres Format: postgres://user:password@host:port/database"
         },
         "dbrun.rowLimit": {
           "type": "integer",

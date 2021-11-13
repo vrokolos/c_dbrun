@@ -4,17 +4,27 @@ import { SqlAutoComplete } from "./autocomplete";
 
 let db = new DBRun();
 
+let stIcon: vscode.StatusBarItem | null = null;
+let currCon: string | null = null;
+let currName: string = "dbrun";
+
 export function activate(context: vscode.ExtensionContext) {
 	let _outputChannel = vscode.window.createOutputChannel("dbrun");
+	stIcon = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1000);
+	stIcon.text = "conn1";
+	stIcon.command = "dbrun.chooseConnection";
+	stIcon.show();
+
 
 	let commands: { [command: string]: any } = {
 		'dbrun.currentQuery': () => go(_outputChannel, { kind: 1 }),
 		'dbrun.describeObject': () => go(_outputChannel, { kind: 2 }),
 		'dbrun.executeFile': () => go(_outputChannel, { kind: 0 }),
+		'dbrun.chooseConnection': () => chooseConn(),
 		'dbrun.reconnect': () => dbConnect(),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
-		'dbrun.currentQueryNewWindowInsert': () => go(_outputChannel, {kind: 1, newwindow: true, format: 'insert'}),
-		'dbrun.currentQueryNewWindowCSV': () => go(_outputChannel, {kind: 1, newwindow: true, format: 'csv'}),		
+		'dbrun.currentQueryNewWindowInsert': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'insert' }),
+		'dbrun.currentQueryNewWindowCSV': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'csv' }),
 		'dbrun.run': (opt: ExtOptions) => go(_outputChannel, opt)
 	};
 
@@ -27,7 +37,25 @@ export function activate(context: vscode.ExtensionContext) {
 function dbConnect() {
 	let conf = vscode.workspace.getConfiguration('dbrun');
 	let con = conf.get<string>('connection') ?? "";
-	db.connect(con);
+	let cons = conf.get<{ [name: string]: string }>('connections') ?? null;
+	db.connect(currCon ?? (cons === null ? con : cons[Object.keys(cons)[0]]));
+}
+
+async function chooseConn() {
+	let conf = vscode.workspace.getConfiguration('dbrun');
+	let cons = conf.get<{ [name: string]: string }>('connections') ?? null;
+	if (cons) {
+		let vals = await vscode.window.showQuickPick(Object.values(cons));
+		if (vals) {
+			currCon = vals;
+			currName = Object.entries(cons).find(p => p[1] === vals)?.[0] ?? "dbrun";
+			if (stIcon !== null) {
+				stIcon.text = currName;
+			}
+			dbConnect();
+			console.log(vals);
+		}
+	}
 }
 
 function changeLogLang() {
@@ -68,13 +96,14 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 
 		let conf = vscode.workspace.getConfiguration('dbrun');
 		let con = conf.get<string>('connection') ?? "";
+		let cons = conf.get<{ [name: string]: string }>('connections') ?? false;
 		let lim = conf.get<number>('rowLimit') ?? 10;
 		let limit = nw ? 99000 : lim;
 
 		db.extraLog = data => _outputChannel.appendLine(data.toString());
 		let doptions = new DbRunOptions();
 		doptions.fileText = ttext;
-		doptions.connectionString = con;
+		doptions.connectionString = currCon ?? (cons === false ? con : cons[Object.keys(cons)[0]]);
 		doptions.currentLine = lineNumber;
 		doptions.currentCol = colNumber;
 		doptions.rowLimit = limit;
