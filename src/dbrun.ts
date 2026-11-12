@@ -1,8 +1,6 @@
 import { performance } from "perf_hooks";
 import Table from 'cli-table3';
-import { matchAll } from "./utils";
-import { Oracle } from "./executors/oracle";
-import { Postgres } from "./executors/postgres";
+import { matchAll, parseParamDate, stripStringsAndComments } from "./utils";
 import { ExportToCsv } from 'export-to-csv';
 import { Executor, ExecParam } from "./iDB";
 
@@ -83,8 +81,11 @@ export class DBRun {
 
     public async connect(conString: string) {
         if (conString.startsWith('postgres')) {
+            
+            let Postgres = await (await import ("./executors/postgres")).Postgres;
             this.runner = new Postgres();
         } else {
+            let Oracle = await (await import('./executors/oracle')).Oracle;
             this.runner = new Oracle();
         }
         try {
@@ -127,9 +128,9 @@ export class DBRun {
                 } else if (pValue.startsWith("'") && pValue.endsWith("'")) {
                     param.value = pValue.substr(1, pValue.length - 2);
                 } else {
-                    let theDate = Date.parse(pValue);
+                    let theDate = parseParamDate(pValue);
                     if (theDate) {
-                        param.value = new Date(theDate);
+                        param.value = theDate;
                     } else {
                         param.value = pValue;
                     }
@@ -145,7 +146,7 @@ export class DBRun {
         let needed: string[] = [];
 
         let neededPatt = /[^-](\:\w+)/gi;
-        let resultNeeded = matchAll(file2.replace(/'.*?'/gsm, ''), neededPatt);
+        let resultNeeded = matchAll(stripStringsAndComments(file2), neededPatt);
         for (let res of resultNeeded) {
             if ([':='].indexOf(res[1].toUpperCase()) === -1) {
                 if (!params.some(p => p.name.toUpperCase() === res[1].toUpperCase())) {
