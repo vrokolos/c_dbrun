@@ -76,7 +76,7 @@ format | "text" | generates text ascii data table for resultsets **(default)**
 format | "csv" | generates csv table for resultsets
 
 ## Autocomplete
-Initial support added for autocompletion of tables, views, functions, procedures, packages. Only their name is fetched currently. They get fetched only when you manually use "ctrl+space" and the names get cached until you reload vscode
+Initial support added for autocompletion of tables, views, functions, procedures, packages. Only their name is fetched currently. They get fetched only when you manually use "ctrl+space" and the names get cached until you reload vscode, switch connections, or run the **dbrun: Refresh Schema Cache** command (useful after creating/renaming DB objects without wanting to reload the whole window).
 
 ## Query Parameters
 You can use parameters in your files like ":THEID"

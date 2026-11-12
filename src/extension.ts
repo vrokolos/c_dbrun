@@ -3,6 +3,7 @@ import { DBRun, DbRunOptions } from "./dbrun";
 import { SqlAutoComplete } from "./autocomplete";
 
 let db = new DBRun();
+let autocomplete: SqlAutoComplete | null = null;
 
 let stIcon: vscode.StatusBarItem | null = null;
 let currCon: string | null = null;
@@ -23,6 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 		'dbrun.chooseConnection': () => chooseConn(),
 		'dbrun.reconnect': () => dbConnect(),
 		'dbrun.reloadObject': () => go(_outputChannel, { kind: 3 }),
+		'dbrun.refreshSchemaCache': () => refreshSchemaCache(),
 		'dbrun.currentQueryNewWindow': () => go(_outputChannel, { kind: 1, newwindow: true }),
 		'dbrun.currentQueryNewWindowInsert': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'insert' }),
 		'dbrun.currentQueryNewWindowCSV': () => go(_outputChannel, { kind: 1, newwindow: true, format: 'csv' }),
@@ -32,20 +34,45 @@ export function activate(context: vscode.ExtensionContext) {
 	for (let command of Object.keys(commands)) {
 		context.subscriptions.push(vscode.commands.registerCommand(command, commands[command]));
 	}
-	context.subscriptions.push(vscode.languages.registerCompletionItemProvider("sql", new SqlAutoComplete(db, vscode.workspace.getConfiguration('dbrun')?.get<string>('connection') ?? "")));
+	autocomplete = new SqlAutoComplete(db, getDefaultConnectionString());
+	context.subscriptions.push(vscode.languages.registerCompletionItemProvider("sql", autocomplete));
+}
+
+/** The `dbrun.connection(s)` settings default to "" / {} (see package.json); treat them as such
+ * even if a workspace configured them with stale falsy values. */
+function getDefaultConnectionString(): string {
+	let conf = vscode.workspace.getConfiguration('dbrun');
+	return conf.get<string>('connection') || "";
+}
+
+function getNamedConnections(): { [name: string]: string } {
+	let conf = vscode.workspace.getConfiguration('dbrun');
+	return conf.get<{ [name: string]: string }>('connections') || {};
+}
+
+function resolveConnectionString(): string {
+	if (currCon) {
+		return currCon;
+	}
+	let cons = getNamedConnections();
+	let names = Object.keys(cons);
+	return names.length > 0 ? cons[names[0]] : getDefaultConnectionString();
 }
 
 function dbConnect() {
-	let conf = vscode.workspace.getConfiguration('dbrun');
-	let con = conf.get<string>('connection') ?? "";
-	let cons = conf.get<{ [name: string]: string }>('connections') ?? null;
-	db.connect(currCon ?? (cons === null ? con : cons[Object.keys(cons)[0]]));
+	let conString = resolveConnectionString();
+	db.connect(conString);
+	autocomplete?.setConnection(conString);
+}
+
+function refreshSchemaCache() {
+	autocomplete?.refresh();
+	vscode.window.showInformationMessage("dbrun: schema cache cleared. It will be re-fetched on the next autocomplete request.");
 }
 
 async function chooseConn() {
-	let conf = vscode.workspace.getConfiguration('dbrun');
-	let cons = conf.get<{ [name: string]: string }>('connections') ?? null;
-	if (cons) {
+	let cons = getNamedConnections();
+	if (Object.keys(cons).length > 0) {
 		let vals = await vscode.window.showQuickPick(Object.values(cons));
 		if (vals) {
 			currCon = vals;
@@ -98,15 +125,13 @@ async function go(_outputChannel: vscode.OutputChannel, options: ExtOptions) {
 		}
 
 		let conf = vscode.workspace.getConfiguration('dbrun');
-		let con = conf.get<string>('connection') ?? "";
-		let cons = conf.get<{ [name: string]: string }>('connections') ?? false;
 		let lim = conf.get<number>('rowLimit') ?? 10;
 		let limit = nw ? 99000 : lim;
 
 		db.extraLog = data => _outputChannel.appendLine(data.toString());
 		let doptions = new DbRunOptions();
 		doptions.fileText = ttext;
-		doptions.connectionString = currCon ?? (cons === false ? con : cons[Object.keys(cons)[0]]);
+		doptions.connectionString = resolveConnectionString();
 		doptions.currentLine = lineNumber;
 		doptions.currentCol = colNumber;
 		doptions.rowLimit = limit;

@@ -55,9 +55,7 @@ select table_name, table_type from information_schema.tables where table_catalog
         let objectType = "TABLE";
         try {
             if (!this.conn) {
-                this.conn = new Pool(//{ host: '10.10.101.105', port: 5432, user: 'postgres', password: 'ct3am#' });
-                    { connectionString: opts.connectionString, query_timeout: 30000 });
-                //await this.connect(opts.connectionString);
+                this.conn = new Pool({ connectionString: opts.connectionString, query_timeout: 30000 });
             }
 
             let query = opts.query;
@@ -136,8 +134,8 @@ select table_name, table_type from information_schema.tables where table_catalog
                 }
             }
         } catch (ex) {
-            final.output = [ex.toString()];
-            final.errorOffset = ex.position - 1 ?? null;
+            final.output = [(<any>ex).toString()];
+            final.errorOffset = (<any>ex).position !== undefined ? (<any>ex).position - 1 : null;
             console.log(ex);
         }
 
