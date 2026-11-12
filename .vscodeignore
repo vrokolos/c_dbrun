@@ -4,6 +4,9 @@ out/test/**
 src/**
 .gitignore
 vsc-extension-quickstart.md
+AGENT.md
+eslint.config.js
+test.sql
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
